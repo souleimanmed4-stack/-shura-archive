@@ -748,10 +748,234 @@ return String(value)
 }
 
 /* ==============================
+   إعادة تعيين كلمة المرور
+================================ */
+
+function showResetPassword(){
+
+document.getElementById("loginModal").style.display="flex";
+
+document.querySelector(".modal-box").innerHTML = `
+
+<h2>تعيين كلمة مرور جديدة</h2>
+
+<p style="color:#66737f;line-height:1.7">
+أدخل كلمة المرور الجديدة لحساب لجنة الأرشفة.
+</p>
+
+<input id="newPassword"
+type="password"
+placeholder="كلمة المرور الجديدة">
+
+<input id="confirmPassword"
+type="password"
+placeholder="تأكيد كلمة المرور">
+
+<button class="primary"
+style="width:100%;margin-top:8px"
+onclick="updatePassword()">
+حفظ كلمة المرور الجديدة
+</button>
+
+<div id="resetStatus" class="status"></div>
+
+`;
+
+}
+
+async function updatePassword(){
+
+const password =
+document.getElementById("newPassword").value;
+
+const confirm =
+document.getElementById("confirmPassword").value;
+
+const status =
+document.getElementById("resetStatus");
+
+if(!password || !confirm){
+
+status.textContent =
+"أدخل كلمة المرور في الحقلين.";
+
+return;
+
+}
+
+if(password !== confirm){
+
+status.textContent =
+"كلمتا المرور غير متطابقتين.";
+
+return;
+
+}
+
+if(password.length < 6){
+
+status.textContent =
+"يجب أن تتكون كلمة المرور من 6 أحرف أو أكثر.";
+
+return;
+
+}
+
+status.textContent =
+"جارٍ تحديث كلمة المرور...";
+
+const {error} =
+await sb.auth.updateUser({
+password:password
+});
+
+if(error){
+
+console.error(error);
+
+status.textContent =
+"تعذر تحديث كلمة المرور: " + error.message;
+
+return;
+
+}
+
+status.textContent =
+"تم تغيير كلمة المرور بنجاح ✅";
+
+setTimeout(() => {
+
+document.getElementById("loginModal").style.display="none";
+
+location.href =
+location.origin + location.pathname;
+
+},1500);
+
+}
+
+
+/* ==============================
+   إعادة تعيين كلمة المرور
+================================ */
+
+function showResetPassword(){
+
+document.getElementById("loginModal").style.display="flex";
+
+document.querySelector(".modal-box").innerHTML = `
+
+<h2>تعيين كلمة مرور جديدة</h2>
+
+<p style="color:#66737f;line-height:1.7">
+أدخل كلمة المرور الجديدة لحساب لجنة الأرشفة.
+</p>
+
+<input id="newPassword"
+type="password"
+placeholder="كلمة المرور الجديدة">
+
+<input id="confirmPassword"
+type="password"
+placeholder="تأكيد كلمة المرور">
+
+<button class="primary"
+style="width:100%;margin-top:8px"
+onclick="updatePassword()">
+حفظ كلمة المرور الجديدة
+</button>
+
+<div id="resetStatus" class="status"></div>
+
+`;
+
+}
+
+async function updatePassword(){
+
+const password =
+document.getElementById("newPassword").value;
+
+const confirm =
+document.getElementById("confirmPassword").value;
+
+const status =
+document.getElementById("resetStatus");
+
+if(!password || !confirm){
+
+status.textContent =
+"أدخل كلمة المرور في الحقلين.";
+
+return;
+
+}
+
+if(password !== confirm){
+
+status.textContent =
+"كلمتا المرور غير متطابقتين.";
+
+return;
+
+}
+
+if(password.length < 6){
+
+status.textContent =
+"يجب أن تتكون كلمة المرور من 6 أحرف أو أكثر.";
+
+return;
+
+}
+
+status.textContent =
+"جارٍ تحديث كلمة المرور...";
+
+const {error} =
+await sb.auth.updateUser({
+password:password
+});
+
+if(error){
+
+console.error(error);
+
+status.textContent =
+"تعذر تحديث كلمة المرور: " + error.message;
+
+return;
+
+}
+
+status.textContent =
+"تم تغيير كلمة المرور بنجاح ✅";
+
+setTimeout(() => {
+
+document.getElementById("loginModal").style.display="none";
+
+location.href =
+location.origin + location.pathname;
+
+},1500);
+
+}
+
+
+/* ==============================
    بدء التطبيق
 ================================ */
 
-sb.auth.onAuthStateChange(() => {
+sb.auth.onAuthStateChange((event, session) => {
+
+if(event === "PASSWORD_RECOVERY"){
+
+showResetPassword();
+
+return;
+
+}
 
 checkUser();
 
@@ -761,6 +985,3 @@ loadDocuments();
 checkUser();
 
 </script>
-
-</body>
-</html>
