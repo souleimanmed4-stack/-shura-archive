@@ -39,7 +39,12 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 @media(max-width:760px){.stats,.years,.form{grid-template-columns:1fr}.search{flex-direction:column}.search button{padding:13px}.doc{align-items:flex-start}.admin-bar{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
-<body>
+<body><div id="accessGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
+<div style="background:#fff;width:min(420px,100%);padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.10);text-align:center">
+<h2>🔐 الدخول إلى أرشيف المجلس</h2><p>أدخل رمز الوصول المخصص لزوار الأرشيف.</p>
+<input id="archiveAccessCode" type="password" placeholder="رمز الدخول" autocomplete="off" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #ddd;border-radius:10px;margin:10px 0">
+<button type="button" onclick="verifyArchiveAccess()" style="width:100%;padding:13px;border:0;border-radius:10px;cursor:pointer">دخول إلى الأرشيف</button>
+<div id="accessStatus" style="margin-top:12px"></div></div></div>
 <header><div class="wrap">
 <div class="brand"><div class="logo">🏛️</div><div><h1>أرشيف المجلس الشوري</h1><div class="subtitle">منصة حفظ وتنظيم وتوثيق الذاكرة المؤسسية</div></div></div>
 <div class="search"><input id="q" placeholder="ابحث برقم الأرشيف أو عنوان الوثيقة أو السنة..."><button onclick="render()">بحث</button></div>
@@ -79,7 +84,13 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="full"><button class="primary" onclick="addDocument()">حفظ الوثيقة ورفع الملف</button></div>
 </div>
 <div id="adminStatus" class="status"></div>
-</div>
+<div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
+<h3>🔐 رمز دخول الزوار</h3>
+<p>غيّر رمز الدخول إلى الأرشيف متى شئت. الرمز الجديد يصبح فعالًا فورًا.</p>
+<input id="newArchiveAccessCode" type="text" placeholder="أدخل الرمز الجديد" autocomplete="off">
+<button class="primary" type="button" onclick="changeArchiveAccessCode()">تغيير رمز الدخول</button>
+<div id="accessCodeAdminStatus" class="status"></div>
+</div></div>
 
 <div class="section-title" style="margin-top:28px"><h2>سجل الوثائق</h2><span id="count" class="badge"></span></div>
 <div class="card" id="docs"><div class="empty">جاري تحميل الأرشيف...</div></div>
@@ -373,5 +384,42 @@ async function sendResetEmail(){
  status.className="status success";status.textContent="تم إرسال رابط الاستعادة إلى بريدك الإلكتروني.";
 }
 </script>
-</body>
+<script>
+(function(){
+const K="shura_archive_access_granted";
+function apply(){const g=document.getElementById("accessGate");if(g&&sessionStorage.getItem(K)==="1")g.style.display="none";}
+window.verifyArchiveAccess=async function(){
+const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
+if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
+try{const {data,error}=await sb.from("archive_access").select("id").eq("access_code",c).eq("is_active",true).limit(1);
+if(error)throw error;if(data&&data.length){sessionStorage.setItem(K,"1");document.getElementById("accessGate").style.display="none";s.textContent="";}else s.textContent="رمز الدخول غير صحيح.";
+}catch(e){s.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";}}
+document.addEventListener("DOMContentLoaded",apply);
+})();
+</script><script>
+async function changeArchiveAccessCode(){
+  const input=document.getElementById("newArchiveAccessCode");
+  const status=document.getElementById("accessCodeAdminStatus");
+  const code=(input.value||"").trim();
+  if(code.length<6){
+    status.className="status error";
+    status.textContent="يجب أن يتكون الرمز من 6 أحرف أو أرقام على الأقل.";
+    return;
+  }
+  status.className="status";
+  status.textContent="جارٍ تغيير الرمز...";
+  try{
+    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
+    if(offError) throw offError;
+    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
+    if(addError) throw addError;
+    status.className="status success";
+    status.textContent="تم تغيير رمز الدخول بنجاح.";
+    input.value="";
+  }catch(e){
+    status.className="status error";
+    status.textContent="تعذر تغيير الرمز: "+e.message;
+  }
+}
+</script></body>
 </html>
