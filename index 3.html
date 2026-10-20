@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>أرشيف المجلس الشوري</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:#f5f7fa;color:#17202a}
+header{background:linear-gradient(135deg,#17202a,#263746);color:#fff;padding:28px 18px 34px}
+.wrap{max-width:1100px;margin:auto}.brand{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;border:2px solid rgba(255,255,255,.45);border-radius:14px;display:grid;place-items:center;font-size:25px}
+h1{margin:0;font-size:28px}.subtitle{margin:7px 0 0;color:#d7e0e8}
+.search{margin-top:24px;display:flex;gap:10px}.search input{flex:1;border:0;border-radius:14px;padding:15px 17px;font-size:16px;outline:0}
+button{border:0;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer}.search button{padding:0 20px}
+main{padding:22px 18px 50px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat,.card{background:#fff;border:1px solid #e4e9ee;border-radius:18px;box-shadow:0 5px 18px rgba(20,35,50,.05)}
+.stat{padding:17px}.stat b{display:block;font-size:24px}.stat span{color:#66737f;font-size:13px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+select{background:#fff;border:1px solid #d9e0e7;border-radius:12px;padding:12px 14px;font-size:15px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:10px 0 12px}.section-title h2{font-size:20px;margin:0}
+.years{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{padding:19px}.year{font-size:23px;font-weight:800}
+.card p{color:#687581;line-height:1.7;margin:8px 0 15px}.badge{display:inline-block;background:#eef3f7;border-radius:999px;padding:6px 10px;font-size:12px;color:#3f5261}
+.doc{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:14px 0;border-bottom:1px solid #edf0f3}.doc:last-child{border-bottom:0}
+.doc-title{font-weight:700}.doc-meta{color:#788590;font-size:13px;margin-top:4px}.doc button{border:1px solid #cfd8df;background:#fff}
+.notice{margin-top:22px;background:#fff9e8;border:1px solid #f0dfaa;border-radius:16px;padding:15px;line-height:1.8;color:#604d17}
+footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{padding:25px;text-align:center;color:#7a8792}
+.admin{display:none;background:#fff;border:1px solid #e4e9ee;border-radius:18px;padding:20px;margin-bottom:22px}
+.admin h2{margin-top:0}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.form input,.form select,.form textarea{width:100%;padding:12px;border:1px solid #d9e0e7;border-radius:10px;font-size:15px}.form textarea{min-height:90px}.full{grid-column:1/-1}
+.primary{background:#17202a;color:#fff}.danger{background:#fff1f1;color:#a33}.secondary{background:#eef3f7;color:#263746}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:18px;padding:22px;width:100%;max-width:420px}.modal-box h2{margin-top:0}
+.modal-box input{width:100%;padding:13px;margin:7px 0;border:1px solid #d9e0e7;border-radius:10px}
+.status{margin-top:10px;font-size:14px;line-height:1.7}.success{color:#18794e}.error{color:#b42318}
+.admin-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}
+.user-info{background:#f5f7fa;padding:10px 13px;border-radius:10px;font-size:13px;color:#5d6b76;margin-bottom:15px}
+@media(max-width:760px){.stats,.years,.form{grid-template-columns:1fr}.search{flex-direction:column}.search button{padding:13px}.doc{align-items:flex-start}.admin-bar{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<div class="brand"><div class="logo">🏛️</div><div><h1>أرشيف المجلس الشوري</h1><div class="subtitle">منصة حفظ وتنظيم وتوثيق الذاكرة المؤسسية</div></div></div>
+<div class="search"><input id="q" placeholder="ابحث برقم الأرشيف أو عنوان الوثيقة أو السنة..."><button onclick="render()">بحث</button></div>
+</div></header>
+
+<main class="wrap">
+<div class="stats">
+<div class="stat"><b id="yearCount">3</b><span>سنوات مؤرشفة</span></div>
+<div class="stat"><b id="docCount">0</b><span>وثائق في قاعدة البيانات</span></div>
+<div class="stat"><b>∞</b><span>قابل للتوسع وإضافة وثائق جديدة</span></div>
+</div>
+
+<div class="toolbar">
+<select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
+<select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
+<button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
+</div>
+
+<div class="section-title"><h2>الأرشيف السنوي</h2></div>
+<div class="years">
+<div class="card"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
+<div class="card"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
+<div class="card"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
+</div>
+
+<div id="adminPanel" class="admin">
+<div class="admin-bar"><div><h2>لوحة إدارة الأرشيف</h2></div><button class="danger" onclick="logout()">تسجيل الخروج</button></div>
+<div id="adminUser" class="user-info"></div>
+<div class="form">
+<input id="archiveNumber" placeholder="رقم الأرشيف — مثال: ARCH-2026-002">
+<select id="docYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
+<select id="docType"><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
+<input id="docDate" type="date">
+<input id="docTitle" class="full" placeholder="عنوان الوثيقة">
+<textarea id="docDescription" class="full" placeholder="وصف مختصر للوثيقة"></textarea>
+<div class="full"><label><b>ملف الوثيقة PDF أو صورة</b></label><input id="docFile" type="file" accept=".pdf,image/*"></div>
+<div class="full"><button class="primary" onclick="addDocument()">حفظ الوثيقة ورفع الملف</button></div>
+</div>
+<div id="adminStatus" class="status"></div>
+</div>
+
+<div class="section-title" style="margin-top:28px"><h2>سجل الوثائق</h2><span id="count" class="badge"></span></div>
+<div class="card" id="docs"><div class="empty">جاري تحميل الأرشيف...</div></div>
+<div class="notice"><b>نظام الأرشيف:</b> الوثائق وبياناتها تُدار من قاعدة بيانات Supabase. الملفات المخزنة في مساحة خاصة ولا يتم نشر روابطها الدائمة.</div>
+</main>
+
+<footer>© المجلس الشوري — نظام الأرشفة والتوثيق</footer>
+
+<!-- نافذة الدخول -->
+<div id="loginModal" class="modal"><div class="modal-box">
+<h2>دخول لجنة الأرشفة</h2>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button class="primary" style="width:100%;margin-top:8px" onclick="login()">دخول</button>
+<button style="width:100%;margin-top:8px" onclick="closeLogin()">إلغاء</button>
+<div id="loginStatus" class="status"></div>
+</div></div>
+
+<!-- نافذة إعادة تعيين كلمة المرور -->
+<div id="resetModal" class="modal"><div class="modal-box">
+<h2>تعيين كلمة مرور جديدة</h2>
+<p style="color:#66737f;line-height:1.7">أدخل كلمة المرور الجديدة لحساب لجنة الأرشفة.</p>
+<input id="newPassword" type="password" placeholder="كلمة المرور الجديدة">
+<input id="confirmPassword" type="password" placeholder="تأكيد كلمة المرور">
+<button class="primary" style="width:100%;margin-top:8px" onclick="updatePassword()">حفظ كلمة المرور</button>
+<div id="resetStatus" class="status"></div>
+</div></div>
+
+<script>
+const SUPABASE_URL="https://cemhdfvihcppvyfjxwsi.supabase.co";
+const SUPABASE_KEY="sb_publishable_qS1DWilYVxTmcBUMjdlb2g_-J2Gotoj";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let docs=[];
+let currentUser=null;
+
+async function loadDocuments(){
+const {data,error}=await sb.from("archive_documents").select("*").order("created_at",{ascending:false});
+if(error){
+console.error(error);
+document.getElementById("docs").innerHTML='<div class="empty">تعذر تحميل بيانات الأرشيف.</div>';
+return;
+}
+docs=data||[];
+document.getElementById("docCount").textContent=docs.length;
+render();
+}
+
+function render(){
+const q=document.getElementById("q").value.trim().toLowerCase();
+const y=document.getElementById("year").value;
+const t=document.getElementById("type").value;
+const list=docs.filter(d=>{
+const text=[d.archive_number,d.year,d.document_type,d.title,d.description||""].join(" ").toLowerCase();
+return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
+});
+document.getElementById("count").textContent=list.length+" وثيقة";
+if(!list.length){
+document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة.</div>';
+return;
+}
+document.getElementById("docs").innerHTML=list.map(d=>`
+<div class="doc">
+<div>
+<div class="doc-title">${escapeHtml(d.title)}</div>
+<div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>
+${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
+</div>
+<button onclick="openDocument('${d.id}')">عرض</button>
+</div>`).join("");
+}
+
+async function openDocument(id){
+const doc=docs.find(x=>String(x.id)===String(id));
+if(!doc)return;
+if(!doc.file_url){alert("لم يتم ربط ملف بهذه الوثيقة حتى الآن.");return;}
+if(!currentUser){alert("هذه الوثيقة محفوظة في مساحة خاصة. سجّل دخول لجنة الأرشفة أولاً.");openLogin();return;}
+const isAdmin=await isCurrentUserAdmin();
+if(!isAdmin){alert("ليس لديك صلاحية فتح الملفات الخاصة.");return;}
+const {data,error}=await sb.storage.from("archive-files").createSignedUrl(doc.file_url,3600);
+if(error){console.error(error);alert("تعذر إنشاء رابط مؤقت للملف.");return;}
+window.open(data.signedUrl,"_blank");
+}
+
+function openLogin(){
+document.getElementById("loginModal").style.display="flex";
+document.getElementById("loginStatus").textContent="";
+}
+function closeLogin(){document.getElementById("loginModal").style.display="none";}
+
+async function login(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+const status=document.getElementById("loginStatus");
+if(!email||!password){status.className="status error";status.textContent="أدخل البريد الإلكتروني وكلمة المرور.";return;}
+status.className="status";status.textContent="جارٍ تسجيل الدخول...";
+const {data,error}=await sb.auth.signInWithPassword({email,password});
+if(error){
+console.error(error);
+status.className="status error";
+status.textContent="تعذر تسجيل الدخول: "+error.message;
+return;
+}
+const user=data.user;
+const {data:roleData,error:roleError}=await sb.from("archive_users").select("role").eq("user_id",user.id).single();
+if(roleError||!roleData||roleData.role!=="admin"){
+await sb.auth.signOut();
+status.className="status error";
+status.textContent="هذا الحساب لا يملك صلاحية إدارة الأرشيف.";
+return;
+}
+currentUser=user;
+closeLogin();
+showAdmin();
+}
+
+async function isCurrentUserAdmin(){
+if(!currentUser)return false;
+const {data,error}=await sb.from("archive_users").select("role").eq("user_id",currentUser.id).single();
+if(error){console.error(error);return false;}
+return data&&data.role==="admin";
+}
+
+async function checkUser(){
+const {data:{user}}=await sb.auth.getUser();
+if(!user)return;
+const {data,error}=await sb.from("archive_users").select("role").eq("user_id",user.id).single();
+if(!error&&data&&data.role==="admin"){
+currentUser=user;
+showAdmin();
+}
+}
+
+function showAdmin(){
+document.getElementById("adminPanel").style.display="block";
+document.getElementById("loginButton").textContent="لجنة الأرشفة — لوحة الإدارة";
+if(currentUser)document.getElementById("adminUser").textContent="مسجل الدخول: "+(currentUser.email||"");
+}
+
+async function logout(){
+await sb.auth.signOut();
+currentUser=null;
+document.getElementById("adminPanel").style.display="none";
+document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
+alert("تم تسجيل الخروج بنجاح.");
+}
+
+async function addDocument(){
+if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
+const admin=await isCurrentUserAdmin();
+if(!admin){alert("ليس لديك صلاحية إضافة الوثائق.");return;}
+const status=document.getElementById("adminStatus");
+status.className="status";status.textContent="جارٍ حفظ الوثيقة...";
+const archiveNumber=document.getElementById("archiveNumber").value.trim();
+const year=document.getElementById("docYear").value;
+const type=document.getElementById("docType").value;
+const date=document.getElementById("docDate").value||null;
+const title=document.getElementById("docTitle").value.trim();
+const description=document.getElementById("docDescription").value.trim();
+const file=document.getElementById("docFile").files[0];
+if(!archiveNumber||!title){status.className="status error";status.textContent="أدخل رقم الأرشيف وعنوان الوثيقة.";return;}
+
+const {data,error}=await sb.from("archive_documents").insert({
+archive_number:archiveNumber,year:year,document_type:type,document_date:date,title:title,description:description,is_public:true
+}).select().single();
+
+if(error){
+console.error(error);
+status.className="status error";
+status.textContent="تعذر إنشاء سجل الوثيقة: "+error.message;
+return;
+}
+
+if(file){
+const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+const filePath=year+"/"+data.id+"_"+Date.now()+"_"+safeName;
+const {error:uploadError}=await sb.storage.from("archive-files").upload(filePath,file,{upsert:false});
+if(uploadError){
+console.error(uploadError);
+await sb.from("archive_documents").delete().eq("id",data.id);
+status.className="status error";
+status.textContent="فشل رفع الملف: "+uploadError.message;
+return;
+}
+const {error:updateError}=await sb.from("archive_documents").update({file_url:filePath}).eq("id",data.id);
+if(updateError){
+console.error(updateError);
+status.className="status error";
+status.textContent="تم رفع الملف لكن تعذر ربطه بالسجل.";
+return;
+}
+}
+
+status.className="status success";
+status.textContent="تمت إضافة الوثيقة بنجاح ✅";
+document.getElementById("archiveNumber").value="";
+document.getElementById("docTitle").value="";
+document.getElementById("docDescription").value="";
+document.getElementById("docFile").value="";
+await loadDocuments();
+}
+
+function escapeHtml(value){
+return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+/* إعادة تعيين كلمة المرور */
+async function updatePassword(){
+const password=document.getElementById("newPassword").value;
+const confirm=document.getElementById("confirmPassword").value;
+const status=document.getElementById("resetStatus");
+
+if(!password||password.length<8){
+status.className="status error";
+status.textContent="يجب أن تكون كلمة المرور 8 أحرف على الأقل.";
+return;
+}
+if(password!==confirm){
+status.className="status error";
+status.textContent="كلمتا المرور غير متطابقتين.";
+return;
+}
+
+status.className="status";
+status.textContent="جارٍ تحديث كلمة المرور...";
+
+const {error}=await sb.auth.updateUser({password});
+if(error){
+console.error(error);
+status.className="status error";
+status.textContent="تعذر تحديث كلمة المرور: "+error.message;
+return;
+}
+
+status.className="status success";
+status.textContent="تم تحديث كلمة المرور بنجاح ✅";
+
+setTimeout(()=>{
+document.getElementById("resetModal").style.display="none";
+openLogin();
+},1200);
+}
+
+/* مراقبة حالة الدخول والاستعادة */
+sb.auth.onAuthStateChange((event,session)=>{
+if(event==="PASSWORD_RECOVERY"){
+document.getElementById("resetModal").style.display="flex";
+return;
+}
+
+if(event==="SIGNED_OUT"){
+currentUser=null;
+document.getElementById("adminPanel").style.display="none";
+document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
+return;
+}
+
+if(event==="SIGNED_IN"&&session){
+checkUser();
+}
+});
+
+loadDocuments();
+checkUser();
+</script>
+
+<!-- Forgot password modal -->
+<div id="forgotModal" class="modal" style="display:none">
+  <div class="modal-box">
+    <h2>استعادة كلمة المرور</h2>
+    <p>أدخل البريد الإلكتروني المرتبط بحساب لجنة الأرشفة.</p>
+    <input id="forgotEmail" type="email" placeholder="البريد الإلكتروني">
+    <button class="primary" onclick="sendResetEmail()">إرسال رابط الاستعادة</button>
+    <button class="secondary" onclick="document.getElementById('forgotModal').style.display='none'">إلغاء</button>
+    <div id="forgotStatus" class="status"></div>
+  </div>
+</div>
+<script>
+async function openForgotPassword(){
+  const loginModal=document.getElementById("loginModal");
+  if(loginModal) loginModal.style.display="none";
+  const m=document.getElementById("forgotModal");
+  if(m){
+    m.style.display="flex";
+    const e=document.getElementById("forgotEmail");
+    if(e) e.value="";
+    const s=document.getElementById("forgotStatus");
+    if(s) s.textContent="";
+  }
+}
+
+async function sendResetEmail(){
+  const email=(document.getElementById("forgotEmail").value||"").trim();
+  const status=document.getElementById("forgotStatus");
+  if(!email){
+    status.className="status error";
+    status.textContent="يرجى إدخال البريد الإلكتروني.";
+    return;
+  }
+  status.className="status";
+  status.textContent="جارٍ إرسال رابط الاستعادة...";
+  const {error}=await sb.auth.resetPasswordForEmail(email,{
+    redirectTo:"https://souleimanmed4-stack.github.io/-shura-archive/"
+  });
+  if(error){
+    status.className="status error";
+    status.textContent="تعذر إرسال الرابط: "+error.message;
+    return;
+  }
+  status.className="status success";
+  status.textContent="تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.";
+}
+</script>
+</body>
+</html>
