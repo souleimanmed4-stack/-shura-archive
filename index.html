@@ -419,33 +419,44 @@ async function changeArchiveAccessCode(){
     }
   }
   window.verifyArchiveAccess=async function(){
-    const input=document.getElementById("archiveAccessCode");
-    const status=document.getElementById("accessStatus");
-    const code=(input.value||"").trim();
-    if(!code){
-      status.textContent="يرجى إدخال رمز الدخول.";
+  const input=document.getElementById("archiveAccessCode");
+  const status=document.getElementById("accessStatus");
+  const code=(input.value||"").trim();
+
+  if(!code){
+    status.textContent="يرجى إدخال رمز الدخول.";
+    return;
+  }
+
+  status.textContent="جارٍ التحقق...";
+
+  try{
+    const {data,error}=await sb
+      .from("archive_access")
+      .select("access_code")
+      .eq("is_active",true)
+      .maybeSingle();
+
+    if(error){
+      console.error(error);
+      status.textContent="تعذر الاتصال بقاعدة البيانات.";
       return;
     }
-    status.textContent="جارٍ التحقق...";
-    try{
-      const {data,error}=await sb.from("archive_access")
-        .select("id")
-        .eq("access_code",code)
-        .eq("is_active",true)
-        .limit(1);
-      if(error) throw error;
-      if(data && data.length){
-        sessionStorage.setItem(ACCESS_KEY,"1");
-        document.getElementById("accessGate").style.display="none";
-        status.textContent="";
-      }else{
-        status.textContent="رمز الدخول غير صحيح.";
-      }
-    }catch(e){
-      console.error(e);
-      status.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";
+
+    if(data && data.access_code === code){
+      sessionStorage.setItem(ACCESS_KEY,"1");
+      document.getElementById("accessGate").style.display="none";
+      status.textContent="";
+    }else{
+      status.textContent="رمز الدخول غير صحيح.";
     }
-  };
+
+  }catch(e){
+    console.error(e);
+    status.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";
+  }
+};
+
   document.addEventListener("DOMContentLoaded",applyGate);
 })();
 </script>
