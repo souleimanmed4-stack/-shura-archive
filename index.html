@@ -389,18 +389,24 @@ async function changeArchiveAccessCode(){
   const input=document.getElementById("newArchiveAccessCode");
   const status=document.getElementById("accessCodeAdminStatus");
   const code=(input.value||"").trim();
+
   if(code.length<6){
     status.className="status error";
     status.textContent="يجب أن يتكون الرمز من 6 أحرف أو أرقام على الأقل.";
     return;
   }
+
   status.className="status";
   status.textContent="جارٍ تغيير الرمز...";
+
   try{
-    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
-    if(offError) throw offError;
-    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
-    if(addError) throw addError;
+    const {error}=await sb
+      .from("archive_access")
+      .update({access_code:code})
+      .eq("is_active",true);
+
+    if(error) throw error;
+
     status.className="status success";
     status.textContent="تم تغيير رمز الدخول بنجاح.";
     input.value="";
