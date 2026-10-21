@@ -47,7 +47,11 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div id="accessStatus" style="margin-top:12px"></div></div></div>
 <header><div class="wrap">
 <div class="brand"><div class="logo">🏛️</div><div><h1>أرشيف المجلس الشوري</h1><div class="subtitle">منصة حفظ وتنظيم وتوثيق الذاكرة المؤسسية</div></div></div>
-<div class="search"><input id="q" placeholder="ابحث برقم الأرشيف أو عنوان الوثيقة أو السنة..."><button onclick="render()">بحث</button></div>
+<div class="search">
+<input id="q" placeholder="ابحث برقم الأرشيف أو العنوان أو السنة أو الوصف..." oninput="render()">
+<button type="button" onclick="render()">بحث</button>
+<button type="button" onclick="clearSearch()" style="background:#eef2f5;color:#26343d">مسح</button>
+</div>
 </div></header>
 
 <main class="wrap">
@@ -65,9 +69,9 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
 <div class="years">
-<div class="card"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
-<div class="card"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
-<div class="card"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
+<div class="card" onclick="filterYear('2023/2024')" style="cursor:pointer"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
+<div class="card" onclick="filterYear('2024/2025')" style="cursor:pointer"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
+<div class="card" onclick="filterYear('2025/2026')" style="cursor:pointer"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
 </div>
 
 <div id="adminPanel" class="admin">
@@ -143,19 +147,40 @@ document.getElementById("docCount").textContent=docs.length;
 render();
 }
 
+function normalizeSearch(value){
+return String(value||"")
+.replace(/[ًٌٍَُِّْـ]/g,"")
+.replace(/[أإآ]/g,"ا")
+.replace(/ة/g,"ه")
+.replace(/ى/g,"ي")
+.toLowerCase()
+.trim();
+}
+
 function render(){
-const q=document.getElementById("q").value.trim().toLowerCase();
+const q=normalizeSearch(document.getElementById("q").value);
 const y=document.getElementById("year").value;
 const t=document.getElementById("type").value;
+
 const list=docs.filter(d=>{
-const text=[d.archive_number,d.year,d.document_type,d.title,d.description||""].join(" ").toLowerCase();
+const text=normalizeSearch([
+d.archive_number,
+d.year,
+d.document_type,
+d.title,
+d.description||"",
+d.document_date||""
+].join(" "));
 return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
 });
+
 document.getElementById("count").textContent=list.length+" وثيقة";
+
 if(!list.length){
-document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة.</div>';
+document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة. جرّب كلمة أخرى أو غيّر التصفية.</div>';
 return;
 }
+
 document.getElementById("docs").innerHTML=list.map(d=>`
 <div class="doc">
 <div>
@@ -165,6 +190,21 @@ ${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
 </div>
 <button onclick="openDocument('${d.id}')">عرض</button>
 </div>`).join("");
+}
+
+function clearSearch(){
+document.getElementById("q").value="";
+document.getElementById("year").value="";
+document.getElementById("type").value="";
+render();
+}
+
+function filterYear(year){
+document.getElementById("year").value=year;
+document.getElementById("type").value="";
+document.getElementById("q").value="";
+render();
+document.getElementById("docs").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 async function openDocument(id){
