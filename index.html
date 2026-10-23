@@ -199,7 +199,7 @@ ${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
 async function loadEvents(){
 const {data,error}=await sb.from("archive_events").select("*").order("created_at",{ascending:false});
 if(error){console.error(error);document.getElementById("events").innerHTML='<div class="empty">تعذر تحميل بيانات الفعاليات.</div>';return;}
-events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();prepareNextEventNumber();
+events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();prepareNextEventNumber();openEventFromUrl();
 }
 function showArchiveTab(tab){
 const docsTab=document.getElementById("docsTab"), eventsTab=document.getElementById("eventsTab");
@@ -220,7 +220,7 @@ const q=(document.getElementById("eventQ")?.value||"").trim().toLowerCase();
 const list=events.filter(e=>{const text=[e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" ").toLowerCase();return !q||text.includes(q);});
 document.getElementById("eventCount").textContent=list.length+" فعالية";
 if(!list.length){document.getElementById("events").innerHTML='<div class="empty">لا توجد فعاليات مطابقة.</div>';return;}
-document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="openEvent('${e.id}')">فتح ملف الفعالية</button></div></div>`).join("");
+document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="openEvent('${e.id}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button></div></div>`).join("");
 }
 function openEvent(id){
 const e=events.find(x=>String(x.id)===String(id));if(!e)return;
@@ -231,9 +231,13 @@ if(e.committee)html+=`<div class="detail-row"><b>اللجنة المنظمة</b>
 if(e.description)html+=`<div class="detail-row"><b>الوصف</b>${escapeHtml(e.description)}</div>`;
 if(e.report_file_url)html+=`<div style="margin-top:16px"><button class="primary" onclick="openEventReport('${e.id}')">عرض التقرير / الملف</button></div>`;
 if(e.source_page)html+=`<div class="detail-row"><b>صفحة المصدر</b>الصفحة ${escapeHtml(String(e.source_page))} من الأرشيف السنوي المرتبط.</div>`;
-document.getElementById("eventDetailContent").innerHTML=html;document.getElementById("eventDetailModal").style.display="flex";
+document.getElementById("eventDetailContent").innerHTML=html;document.getElementById("eventDetailModal").style.display="flex";const url=new URL(window.location.href);url.searchParams.set("event",e.event_number);window.history.replaceState({},"",url.toString());document.title=e.title+" — أرشيف المجلس الشوري";
 }
-function closeEventDetail(){document.getElementById("eventDetailModal").style.display="none";}
+function closeEventDetail(){document.getElementById("eventDetailModal").style.display="none";const url=new URL(window.location.href);url.searchParams.delete("event");window.history.replaceState({},"",url.toString());document.title="أرشيف المجلس الشوري";}
+async function copyEventLink(eventNumber){const url=new URL(window.location.href);url.searchParams.set("event",eventNumber);try{await navigator.clipboard.writeText(url.toString());alert("تم نسخ رابط الفعالية.");}catch(e){window.prompt("انسخ رابط الفعالية:",url.toString());}}
+function openEventByNumber(eventNumber){const e=events.find(x=>String(x.event_number)===String(eventNumber));if(e)openEvent(e.id);}
+function openEventFromUrl(){const n=new URLSearchParams(window.location.search).get("event");if(n)openEventByNumber(n);}
+
 async function openEventReport(id){
 const e=events.find(x=>String(x.id)===String(id));if(!e||!e.report_file_url)return;
 const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
