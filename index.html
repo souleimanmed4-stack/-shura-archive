@@ -525,7 +525,7 @@ const date=new Date(x.created_at).toLocaleString("ar-MR");
 const name=escapeHtml(x.visitor_name||"زائر بدون اسم");
 const msg=escapeHtml(x.message||"");
 const phone=x.whatsapp?escapeHtml(x.whatsapp):"";
-const wa=x.whatsapp?'<button class="secondary" type="button" onclick="openFeedbackWhatsApp(\''+encodeURIComponent(x.whatsapp)+"\')">واتساب</button>":"";
+const wa=x.whatsapp?`<button class="secondary" type="button" onclick="openFeedbackWhatsApp('${encodeURIComponent(x.whatsapp)}')">واتساب</button>`:"";
 return '<div class="feedback-item '+(x.is_approved?'approved':'pending')+'"><div class="feedback-head"><span class="feedback-name">'+name+'</span><span class="feedback-date">'+date+'</span></div><div class="feedback-message">'+msg+'</div>'+(phone?'<div class="feedback-date">واتساب: '+phone+'</div>':'')+'<div class="feedback-actions">'+(!x.is_approved?'<button class="primary" type="button" onclick="approveFeedback('+x.id+')">تمت المراجعة</button>':'<span class="badge">تمت المراجعة ✓</span>')+wa+'<button class="danger" type="button" onclick="deleteFeedback('+x.id+')">حذف</button></div></div>';
 }).join("");
 }
