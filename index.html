@@ -199,7 +199,7 @@ ${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
 async function loadEvents(){
 const {data,error}=await sb.from("archive_events").select("*").order("created_at",{ascending:false});
 if(error){console.error(error);document.getElementById("events").innerHTML='<div class="empty">تعذر تحميل بيانات الفعاليات.</div>';return;}
-events=data||[];renderEvents();prepareNextEventNumber();
+events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();prepareNextEventNumber();
 }
 function showArchiveTab(tab){
 const docsTab=document.getElementById("docsTab"), eventsTab=document.getElementById("eventsTab");
@@ -230,6 +230,7 @@ if(e.event_type)html+=`<div class="detail-row"><b>النوع</b>${escapeHtml(e.e
 if(e.committee)html+=`<div class="detail-row"><b>اللجنة المنظمة</b>${escapeHtml(e.committee)}</div>`;
 if(e.description)html+=`<div class="detail-row"><b>الوصف</b>${escapeHtml(e.description)}</div>`;
 if(e.report_file_url)html+=`<div style="margin-top:16px"><button class="primary" onclick="openEventReport('${e.id}')">عرض التقرير / الملف</button></div>`;
+if(e.source_page)html+=`<div class="detail-row"><b>صفحة المصدر</b>الصفحة ${escapeHtml(String(e.source_page))} من الأرشيف السنوي المرتبط.</div>`;
 document.getElementById("eventDetailContent").innerHTML=html;document.getElementById("eventDetailModal").style.display="flex";
 }
 function closeEventDetail(){document.getElementById("eventDetailModal").style.display="none";}
@@ -237,7 +238,7 @@ async function openEventReport(id){
 const e=events.find(x=>String(x.id)===String(id));if(!e||!e.report_file_url)return;
 const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
 if(!data||!data.publicUrl){alert("تعذر فتح ملف التقرير.");return;}
-window.open(data.publicUrl,"_blank");
+window.open(data.publicUrl+(e.source_page?"#page="+encodeURIComponent(e.source_page):""),"_blank");
 }
 async function addEvent(){
 if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
