@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>أرشيف المجلس الشوري</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+async function submitVisitorFeedback(){
+const name=document.getElementById("visitorName").value.trim();
+const message=document.getElementById("visitorMessage").value.trim();
+const status=document.getElementById("visitorFeedbackStatus");
+if(message.length<2){status.className="status error";status.textContent="اكتب رسالتك أولًا.";return;}
+status.className="status";status.textContent="جارٍ إرسال الرسالة...";
+const {error}=await sb.from("archive_feedback").insert({visitor_name:name||null,message});
+if(error){console.error(error);status.className="status error";status.textContent="تعذر إرسال الرسالة. حاول مرة أخرى.";return;}
+document.getElementById("visitorMessage").value="";
+document.getElementById("visitorName").value="";
+status.className="status success";status.textContent="تم إرسال رسالتك بنجاح، شكرًا لتواصلك معنا. ✅";
+}
+
+function openArchiveWhatsApp(){
+const number="22226626204";
+if(!number){alert("سيتم تفعيل التواصل عبر واتساب بعد إضافة رقم واتساب الرسمي للأرشيف.");return;}
+const text=encodeURIComponent("السلام عليكم، أود التواصل بخصوص أرشيف المجلس الشوري.");
+window.open("https://wa.me/"+number+"?text="+text,"_blank");
+}
+</script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:#f5f7fa;color:#17202a}
@@ -36,8 +57,13 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 .status{margin-top:10px;font-size:14px;line-height:1.7}.success{color:#18794e}.error{color:#b42318}
 .admin-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}
 .user-info{background:#f5f7fa;padding:10px 13px;border-radius:10px;font-size:13px;color:#5d6b76;margin-bottom:15px}
-@media(max-width:760px){.stats,.years,.form{grid-template-columns:1fr}.search{flex-direction:column}.search button{padding:13px}.doc{align-items:flex-start}.admin-bar{align-items:flex-start;flex-direction:column}}
-</style>
+.event-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.event-card{background:#fff;border:1px solid #e4e9ee;border-radius:18px;padding:18px;box-shadow:0 5px 18px rgba(20,35,50,.05)}.event-title{font-weight:800;font-size:18px}.event-meta{color:#788590;font-size:13px;margin-top:6px;line-height:1.7}.event-actions{margin-top:12px}.event-actions button{border:1px solid #cfd8df;background:#fff}.detail{display:none}.detail-box{max-width:650px;max-height:85vh;overflow:auto}.detail-row{padding:10px 0;border-bottom:1px solid #edf0f3}.detail-row b{display:block;margin-bottom:4px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 10px}.tabs button{background:#eef3f7}.tabs button.active{background:#17202a;color:#fff}
+@media(max-width:760px){.stats,.years,.form,.event-grid{grid-template-columns:1fr}.search{flex-direction:column}.search button{padding:13px}.doc{align-items:flex-start}.admin-bar{align-items:flex-start;flex-direction:column}}
+
+.archive-stats{margin:28px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:linear-gradient(180deg,#fff,#fafafa);box-shadow:0 8px 24px rgba(0,0,0,.04)}
+.archive-stats-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.archive-stats-head h2{margin:0}.archive-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mini-stat{padding:16px;border:1px solid #edf0f3;border-radius:14px;background:#fff;text-align:center}.mini-stat b{display:block;font-size:28px;line-height:1.2}.mini-stat span{display:block;margin-top:6px;color:#667085;font-size:13px}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.chart-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fff}.chart-card h3{margin:0 0 14px}.bar-row{display:grid;grid-template-columns:100px 1fr 42px;gap:10px;align-items:center;margin:10px 0}.bar-label{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:12px;background:#edf1f5;border-radius:20px;overflow:hidden}.bar-fill{height:100%;border-radius:20px;background:#1f2937}.bar-value{text-align:left;font-weight:800;font-size:13px}.stats-note{margin-top:14px;color:#667085;font-size:12px}
+@media(max-width:760px){.archive-stats-grid,.chart-grid{grid-template-columns:1fr 1fr}.bar-row{grid-template-columns:90px 1fr 35px}}
+.contact-section{margin:30px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04)}.contact-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}.contact-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fafafa}.contact-card h3{margin-top:0}.contact-form input,.contact-form textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d8dee4;border-radius:10px;margin:7px 0;font-family:inherit}.contact-form textarea{min-height:110px;resize:vertical}.whatsapp-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:0;border-radius:10px;background:#25d366;color:#fff;font-weight:800;cursor:pointer}.contact-note{font-size:12px;color:#667085;line-height:1.7;margin-top:8px}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}}</style>
 </head>
 <body><div id="accessGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
 <div style="background:#fff;width:min(420px,100%);padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.10);text-align:center">
@@ -47,11 +73,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div id="accessStatus" style="margin-top:12px"></div></div></div>
 <header><div class="wrap">
 <div class="brand"><div class="logo">🏛️</div><div><h1>أرشيف المجلس الشوري</h1><div class="subtitle">منصة حفظ وتنظيم وتوثيق الذاكرة المؤسسية</div></div></div>
-<div class="search">
-<input id="q" placeholder="ابحث برقم الأرشيف أو العنوان أو السنة أو الوصف..." oninput="render()">
-<button type="button" onclick="render()">بحث</button>
-<button type="button" onclick="clearSearch()" style="background:#eef2f5;color:#26343d">مسح</button>
-</div>
+<div class="search"><input id="q" placeholder="ابحث برقم الأرشيف أو عنوان الوثيقة أو السنة..."><button onclick="render()">بحث</button></div>
 </div></header>
 
 <main class="wrap">
@@ -69,11 +91,31 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
 <div class="years">
-<div class="card" onclick="filterYear('2023/2024')" style="cursor:pointer"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
-<div class="card" onclick="filterYear('2024/2025')" style="cursor:pointer"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
-<div class="card" onclick="filterYear('2025/2026')" style="cursor:pointer"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
+<div class="card"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
+<div class="card"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
+<div class="card"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
 </div>
 
+<section class="archive-stats" id="archiveStats">
+<div class="archive-stats-head"><h2>📊 إحصاءات الأرشيف</h2><span class="badge">مؤشرات حية</span></div>
+<div class="archive-stats-grid">
+<div class="mini-stat"><b id="totalEventsStat">0</b><span>إجمالي الفعاليات</span></div>
+<div class="mini-stat"><b id="totalDocsStat">0</b><span>إجمالي الوثائق</span></div>
+<div class="mini-stat"><b id="totalCommitteesStat">0</b><span>اللجان المسجلة</span></div>
+<div class="mini-stat"><b id="totalTypesStat">0</b><span>أنواع الفعاليات</span></div>
+</div>
+<div class="chart-grid">
+<div class="chart-card"><h3>الفعاليات حسب السنة</h3><div id="yearStatsChart"><div class="empty">جاري الحساب...</div></div></div>
+<div class="chart-card"><h3>الفعاليات حسب النوع</h3><div id="typeStatsChart"><div class="empty">جاري الحساب...</div></div></div>
+<div class="chart-card"><h3>الفعاليات حسب اللجنة</h3><div id="committeeStatsChart"><div class="empty">جاري الحساب...</div></div></div>
+<div class="chart-card"><h3>توزيع الأرشيف السنوي</h3><div id="archiveMixChart"><div class="empty">جاري الحساب...</div></div></div>
+</div>
+<div class="stats-note">الأرقام تُحتسب مباشرة من السجلات المنشورة في قاعدة بيانات الأرشيف، وتُحدّث تلقائيًا عند إضافة سجلات جديدة.</div>
+</section>
+
+<div class="tabs"><button id="tabDocs" class="active" onclick="showArchiveTab('docsTab')">الوثائق</button><button id="tabEvents" onclick="showArchiveTab('eventsTab')">الفعاليات والمبادرات</button></div>
+
+<div id="docsTab">
 <div id="adminPanel" class="admin">
 <div class="admin-bar"><div><h2>لوحة إدارة الأرشيف</h2></div><button class="danger" onclick="logout()">تسجيل الخروج</button></div>
 <div id="adminUser" class="user-info"></div>
@@ -88,6 +130,21 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="full"><button class="primary" onclick="addDocument()">حفظ الوثيقة ورفع الملف</button></div>
 </div>
 <div id="adminStatus" class="status"></div>
+<hr style="border:0;border-top:1px solid #edf0f3;margin:22px 0">
+<h3>إضافة فعالية أو مبادرة</h3>
+<div class="form">
+<input id="eventNumber" placeholder="رقم الفعالية — يولد تلقائيًا" readonly>
+<select id="eventYear" onchange="prepareNextEventNumber()"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026" selected>2025/2026</option></select>
+<input id="eventDate" type="date">
+<input id="eventType" placeholder="نوع الفعالية — مثال: أيام تربوية">
+<input id="eventCommittee" placeholder="اللجنة المنظمة">
+<input id="eventTitle" class="full" placeholder="عنوان الفعالية أو المبادرة">
+<textarea id="eventDescription" class="full" placeholder="وصف وتفاصيل الفعالية"></textarea>
+<div class="full"><label><b>تقرير الفعالية PDF أو صورة</b></label><input id="eventFile" type="file" accept=".pdf,image/*"></div>
+<div class="full"><button class="primary" onclick="addEvent()">حفظ الفعالية ورفع التقرير</button></div>
+</div>
+<div id="adminEventStatus" class="status"></div>
+
 <div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>🔐 رمز دخول الزوار</h3>
 <p>غيّر رمز الدخول إلى الأرشيف متى شئت. الرمز الجديد يصبح فعالًا فورًا.</p>
@@ -98,10 +155,52 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 
 <div class="section-title" style="margin-top:28px"><h2>سجل الوثائق</h2><span id="count" class="badge"></span></div>
 <div class="card" id="docs"><div class="empty">جاري تحميل الأرشيف...</div></div>
-<div class="notice"><b>نظام الأرشيف:</b> الوثائق وبياناتها تُدار من قاعدة بيانات Supabase. الملفات المخزنة في مساحة خاصة ولا يتم نشر روابطها الدائمة.</div>
+</div>
+<div class="notice"><b>أرشيف المجلس الشوري:</b> منصة رقمية لحفظ وتوثيق الفعاليات والوثائق وإتاحتها للرجوع إليها بسهولة.</div>
+<section class="contact-section" id="visitorContact">
+<div class="archive-stats-head"><h2>💬 تواصل مع لجنة الأرشفة</h2><span class="badge">رسالتك محل اهتمام</span></div>
+<div class="contact-grid">
+<div class="contact-card contact-form">
+<h3>اترك تعليقًا أو رسالة</h3>
+<p>يمكنك إرسال ملاحظتك أو اقتراحك أو أي استفسار يتعلق بالأرشيف.</p>
+<input id="visitorName" type="text" maxlength="100" placeholder="الاسم (اختياري)">
+<textarea id="visitorMessage" maxlength="2000" placeholder="اكتب رسالتك هنا..."></textarea>
+<button class="primary" type="button" onclick="submitVisitorFeedback()">إرسال الرسالة</button>
+<div id="visitorFeedbackStatus" class="status"></div>
+</div>
+<div class="contact-card">
+<h3>📱 التواصل عبر واتساب</h3>
+<p>للتواصل المباشر مع لجنة الأرشفة عبر واتساب.</p>
+<button class="whatsapp-btn" type="button" onclick="openArchiveWhatsApp()">إرسال رسالة عبر واتساب</button>
+<div class="contact-note">سيتم توجيهك مباشرة إلى محادثة واتساب الخاصة بالأرشيف.</div>
+</div>
+</div>
+</section>
+
+
+<div id="eventsTab" style="display:none">
+<div class="section-title" style="margin-top:28px"><h2>الفعاليات والمبادرات</h2><span id="eventCount" class="badge"></span></div>
+<div class="search" style="margin-top:0;margin-bottom:14px"><input id="eventQ" placeholder="ابحث برقم الفعالية أو اسمها أو السنة..." oninput="renderEvents()"><button onclick="renderEvents()">بحث</button></div>
+<div class="event-grid" id="events"><div class="empty">جاري تحميل الفعاليات...</div></div>
+</div>
 </main>
 
 <footer>© المجلس الشوري — نظام الأرشفة والتوثيق</footer>
+
+<!-- نافذة تفاصيل الفعالية -->
+<div id="eventDetailModal" class="modal" style="display:none">
+  <div class="modal-box detail-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <h2 style="margin:0">تفاصيل الفعالية</h2>
+      <button type="button" class="secondary" onclick="closeEventDetail()">إغلاق</button>
+    </div>
+    <div id="eventDetailContent"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+      <button type="button" class="primary" onclick="copyCurrentEventLink()">نسخ رابط الفعالية</button>
+      <button type="button" class="secondary" onclick="closeEventDetail()">إغلاق</button>
+    </div>
+  </div>
+</div>
 
 <!-- نافذة الدخول -->
 <div id="loginModal" class="modal"><div class="modal-box">
@@ -133,6 +232,7 @@ const SUPABASE_KEY="sb_publishable_qS1DWilYVxTmcBUMjdlb2g_-J2Gotoj";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let docs=[];
+let events=[];
 let currentUser=null;
 
 async function loadDocuments(){
@@ -145,78 +245,194 @@ return;
 docs=data||[];
 document.getElementById("docCount").textContent=docs.length;
 render();
+await loadEvents();
+}
+
+function render(){
+const q=normalizeSearch(document.getElementById("q")?.value||"");
+const y=document.getElementById("year")?.value||"";
+const t=document.getElementById("type")?.value||"";
+
+const list=docs.filter(d=>{
+const text=normalizeSearch([d.archive_number,d.year,d.document_type,d.title,d.description||"",d.document_date||""].join(" "));
+return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
+});
+
+const eventList=(typeof events!=="undefined"?events:[]).filter(e=>{
+const text=normalizeSearch([e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" "));
+// The main search shows events alongside documents. If a document-type filter is selected,
+// keep the result focused on documents; otherwise include matching events.
+return (!q||text.includes(q))&&(!y||e.year===y)&&(!t||!t);
+});
+
+const countText=list.length+" وثيقة"+(eventList.length?" • "+eventList.length+" فعالية":"");
+document.getElementById("count").textContent=countText;
+
+if(!list.length&&!eventList.length){
+ document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة.</div>';
+ return;
+}
+
+let html="";
+if(eventList.length){
+ html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الفعاليات</div>';
+ html+=eventList.map(e=>`<div class="doc" style="align-items:center"><div><div class="doc-title">${escapeHtml(e.title)}</div><div class="doc-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?" • "+escapeHtml(e.event_type):""}${e.committee?" • "+escapeHtml(e.committee):""}</div>${e.description?`<div class="doc-meta">${escapeHtml(e.description)}</div>`:""}</div><button onclick="goToEvent('${String(e.event_number).replace(/'/g,"\\'")}')">فتح صفحة الفعالية</button></div>`).join("");
+}
+if(list.length){
+ html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الوثائق</div>';
+ html+=list.map(d=>`<div class="doc"><div><div class="doc-title">${escapeHtml(d.title)}</div><div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}</div><button onclick="openDocument('${d.id}')">عرض</button></div>`).join("");
+}
+document.getElementById("docs").innerHTML=html;
 }
 
 function normalizeSearch(value){
 return String(value||"")
-.replace(/[ًٌٍَُِّْـ]/g,"")
-.replace(/[أإآ]/g,"ا")
-.replace(/ة/g,"ه")
-.replace(/ى/g,"ي")
-.toLowerCase()
-.trim();
+ .toLowerCase()
+ .replace(/[أإآٱ]/g,"ا")
+ .replace(/ى/g,"ي")
+ .replace(/ة/g,"ه")
+ .replace(/ؤ/g,"و")
+ .replace(/ئ/g,"ي")
+ .replace(/[ًٌٍَُِّْـ]/g,"")
+ .trim();
 }
 
-function render(){
-const q=normalizeSearch(document.getElementById("q").value);
-const y=document.getElementById("year").value;
-const t=document.getElementById("type").value;
 
-const list=docs.filter(d=>{
-const text=normalizeSearch([
-d.archive_number,
-d.year,
-d.document_type,
-d.title,
-d.description||"",
-d.document_date||""
-].join(" "));
-return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
+
+function renderArchiveStats(){
+const totalEvents=events.length;
+const totalDocs=docs.length;
+const committeeMap={},typeMap={},yearMap={};
+events.forEach(e=>{
+ const y=e.year||"غير محدد";
+ yearMap[y]=(yearMap[y]||0)+1;
+ const type=e.event_type||"غير محدد";
+ typeMap[type]=(typeMap[type]||0)+1;
+ const committee=e.committee||"غير محددة";
+ committeeMap[committee]=(committeeMap[committee]||0)+1;
 });
-
-document.getElementById("count").textContent=list.length+" وثيقة";
-
-if(!list.length){
-document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة. جرّب كلمة أخرى أو غيّر التصفية.</div>';
-return;
+const years=["2023/2024","2024/2025","2025/2026"].filter(y=>yearMap[y]!==undefined);
+const maxYear=Math.max(1,...years.map(y=>yearMap[y]||0));
+const makeBars=(map,maxItems=8)=>{
+ const entries=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,maxItems);
+ if(!entries.length)return '<div class="empty">لا توجد بيانات.</div>';
+ const max=Math.max(1,...entries.map(x=>x[1]));
+ return entries.map(([label,value])=>`<div class="bar-row"><div class="bar-label" title="${escapeHtml(label)}">${escapeHtml(label)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,Math.round(value/max*100))}%"></div></div><div class="bar-value">${value}</div></div>`).join("");
+};
+document.getElementById("totalEventsStat").textContent=totalEvents;
+document.getElementById("totalDocsStat").textContent=totalDocs;
+document.getElementById("totalCommitteesStat").textContent=Object.keys(committeeMap).filter(x=>x!=="غير محددة").length;
+document.getElementById("totalTypesStat").textContent=Object.keys(typeMap).filter(x=>x!=="غير محدد").length;
+document.getElementById("yearStatsChart").innerHTML=years.length?years.map(y=>`<div class="bar-row"><div class="bar-label">${escapeHtml(y)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,Math.round((yearMap[y]||0)/maxYear*100))}%"></div></div><div class="bar-value">${yearMap[y]||0}</div></div>`).join(""): '<div class="empty">لا توجد بيانات.</div>';
+document.getElementById("typeStatsChart").innerHTML=makeBars(typeMap);
+document.getElementById("committeeStatsChart").innerHTML=makeBars(committeeMap);
+document.getElementById("archiveMixChart").innerHTML=years.length?years.map(y=>`<div class="bar-row"><div class="bar-label">${escapeHtml(y)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4,Math.round((yearMap[y]||0)/totalEvents*100))}%"></div></div><div class="bar-value">${totalEvents?Math.round((yearMap[y]||0)/totalEvents*100):0}%</div></div>`).join(""): '<div class="empty">لا توجد بيانات.</div>';
 }
 
-document.getElementById("docs").innerHTML=list.map(d=>`
-<div class="doc">
-<div>
-<div class="doc-title">${escapeHtml(d.title)}</div>
-<div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>
-${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
-</div>
-<button onclick="openDocument('${d.id}')">عرض</button>
-</div>`).join("");
+async function loadEvents(){
+const {data,error}=await sb.from("archive_events").select("*").order("created_at",{ascending:false});
+if(error){console.error(error);document.getElementById("events").innerHTML='<div class="empty">تعذر تحميل بيانات الفعاليات.</div>';return;}
+events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();renderArchiveStats();prepareNextEventNumber();openEventFromUrl();
+}
+function showArchiveTab(tab){
+const docsTab=document.getElementById("docsTab"), eventsTab=document.getElementById("eventsTab");
+const tabDocs=document.getElementById("tabDocs"), tabEvents=document.getElementById("tabEvents");
+if(tab==="eventsTab"){docsTab.style.display="none";eventsTab.style.display="block";tabDocs.classList.remove("active");tabEvents.classList.add("active");}
+else{docsTab.style.display="block";eventsTab.style.display="none";tabEvents.classList.remove("active");tabDocs.classList.add("active");}
+}
+function prepareNextEventNumber(){
+const y=document.getElementById("eventYear").value;
+const suffix=(y||"").split("/")[1]||new Date().getFullYear();
+const prefix="EVT-"+suffix+"-";
+let max=0;
+events.forEach(e=>{const m=String(e.event_number||"").match(new RegExp("^"+prefix+"(\\d+)$"));if(m)max=Math.max(max,parseInt(m[1],10)||0);});
+document.getElementById("eventNumber").value=prefix+String(max+1).padStart(3,"0");
+}
+function renderEvents(){
+const q=(document.getElementById("eventQ")?.value||"").trim().toLowerCase();
+const list=events.filter(e=>{const text=[e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" ").toLowerCase();return !q||text.includes(q);});
+document.getElementById("eventCount").textContent=list.length+" فعالية";
+if(!list.length){document.getElementById("events").innerHTML='<div class="empty">لا توجد فعاليات مطابقة.</div>';return;}
+document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button></div></div>`).join("");
+}
+function openEvent(id){
+const e=events.find(x=>String(x.id)===String(id));
+if(!e)return;
+const content=document.getElementById("eventDetailContent");
+const modal=document.getElementById("eventDetailModal");
+if(!content||!modal){console.error("Event detail modal is missing from the page.");return;}
+let html=`<div class="detail-row"><b>رقم الفعالية</b>${escapeHtml(e.event_number)}</div><div class="detail-row"><b>العنوان</b>${escapeHtml(e.title)}</div><div class="detail-row"><b>السنة</b>${escapeHtml(e.year)}</div>`;
+if(e.event_date)html+=`<div class="detail-row"><b>التاريخ</b>${escapeHtml(e.event_date)}</div>`;
+if(e.event_type)html+=`<div class="detail-row"><b>النوع</b>${escapeHtml(e.event_type)}</div>`;
+if(e.committee)html+=`<div class="detail-row"><b>اللجنة المنظمة</b>${escapeHtml(e.committee)}</div>`;
+if(e.description)html+=`<div class="detail-row"><b>الوصف</b>${escapeHtml(e.description)}</div>`;
+if(e.source_page)html+=`<div class="detail-row"><b>صفحة المصدر</b>الصفحة ${escapeHtml(String(e.source_page))} من الأرشيف السنوي المرتبط.</div>`;
+if(e.report_file_url)html+=`<div style="margin-top:16px"><button class="primary" type="button" onclick="openEventReport('${String(e.id)}')">عرض التقرير / الملف</button></div>`;
+content.innerHTML=html;
+modal.style.display="flex";
+const url=new URL(window.location.href);
+url.searchParams.set("event",e.event_number);
+window.history.replaceState({},"",url.toString());
+document.title=e.title+" — أرشيف المجلس الشوري";
+}
+function closeEventDetail(){
+const modal=document.getElementById("eventDetailModal");
+if(modal)modal.style.display="none";
+const url=new URL(window.location.href);
+url.searchParams.delete("event");
+window.history.replaceState({},"",url.toString());
+document.title="أرشيف المجلس الشوري";
+}
+async function copyEventLink(eventNumber){
+const url=new URL(window.location.href);
+url.searchParams.set("event",eventNumber);
+try{await navigator.clipboard.writeText(url.toString());alert("تم نسخ رابط الفعالية.");}
+catch(e){window.prompt("انسخ رابط الفعالية:",url.toString());}
+}
+function copyCurrentEventLink(){
+const n=new URLSearchParams(window.location.search).get("event");
+if(n)copyEventLink(n);
+}
+function goToEvent(eventNumber){
+  const url=new URL(window.location.href);
+  url.searchParams.set("event",String(eventNumber));
+  window.location.href=url.toString();
+}
+function openEventByNumber(eventNumber){
+const e=events.find(x=>String(x.event_number)===String(eventNumber));
+if(e)openEvent(e.id);
+else console.warn("Event not found:",eventNumber);
+}
+function openEventFromUrl(){
+const n=new URLSearchParams(window.location.search).get("event");
+if(n)openEventByNumber(n);
 }
 
-function clearSearch(){
-document.getElementById("q").value="";
-document.getElementById("year").value="";
-document.getElementById("type").value="";
-render();
+async function openEventReport(id){
+const e=events.find(x=>String(x.id)===String(id));if(!e||!e.report_file_url)return;
+const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
+if(!data||!data.publicUrl){alert("تعذر فتح ملف التقرير.");return;}
+window.open(data.publicUrl+(e.source_page?"#page="+encodeURIComponent(e.source_page):""),"_blank");
 }
-
-function filterYear(year){
-document.getElementById("year").value=year;
-document.getElementById("type").value="";
-document.getElementById("q").value="";
-render();
-document.getElementById("docs").scrollIntoView({behavior:"smooth",block:"start"});
+async function addEvent(){
+if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
+if(!(await isCurrentUserAdmin())){alert("ليس لديك صلاحية إضافة الفعاليات.");return;}
+const status=document.getElementById("adminEventStatus");status.className="status";status.textContent="جارٍ حفظ الفعالية...";
+const eventNumber=document.getElementById("eventNumber").value.trim(),year=document.getElementById("eventYear").value,date=document.getElementById("eventDate").value||null,type=document.getElementById("eventType").value.trim(),committee=document.getElementById("eventCommittee").value.trim(),title=document.getElementById("eventTitle").value.trim(),description=document.getElementById("eventDescription").value.trim(),file=document.getElementById("eventFile").files[0];
+if(!eventNumber||!title){status.className="status error";status.textContent="أدخل رقم الفعالية والعنوان.";return;}
+const {data,error}=await sb.from("archive_events").insert({event_number:eventNumber,year,event_date:date,title,event_type:type||null,committee:committee||null,description:description||null,is_public:true}).select().single();
+if(error){console.error(error);status.className="status error";status.textContent="تعذر إنشاء سجل الفعالية: "+error.message;return;}
+if(file){const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const filePath="events/"+data.id+"_"+Date.now()+"_"+safeName;const {error:uploadError}=await sb.storage.from("archive-files").upload(filePath,file,{upsert:false});if(uploadError){await sb.from("archive_events").delete().eq("id",data.id);status.className="status error";status.textContent="فشل رفع الملف: "+uploadError.message;return;}const {error:updateError}=await sb.from("archive_events").update({report_file_url:filePath}).eq("id",data.id);if(updateError){status.className="status error";status.textContent="تم رفع الملف لكن تعذر ربطه بالفعالية.";return;}}
+status.className="status success";status.textContent="تمت إضافة الفعالية بنجاح ✅";["eventTitle","eventType","eventCommittee","eventDescription","eventFile"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});await loadEvents();prepareNextEventNumber();
 }
 
 async function openDocument(id){
 const doc=docs.find(x=>String(x.id)===String(id));
 if(!doc)return;
 if(!doc.file_url){alert("لم يتم ربط ملف بهذه الوثيقة حتى الآن.");return;}
-if(!currentUser){alert("هذه الوثيقة محفوظة في مساحة خاصة. سجّل دخول لجنة الأرشفة أولاً.");openLogin();return;}
-const isAdmin=await isCurrentUserAdmin();
-if(!isAdmin){alert("ليس لديك صلاحية فتح الملفات الخاصة.");return;}
-const {data,error}=await sb.storage.from("archive-files").createSignedUrl(doc.file_url,3600);
-if(error){console.error(error);alert("تعذر إنشاء رابط مؤقت للملف.");return;}
-window.open(data.signedUrl,"_blank");
+const {data}=sb.storage.from("archive-files").getPublicUrl(doc.file_url);
+if(!data||!data.publicUrl){alert("تعذر فتح ملف الوثيقة.");return;}
+window.open(data.publicUrl,"_blank");
 }
 
 function openLogin(){
@@ -425,28 +641,34 @@ async function sendResetEmail(){
 }
 </script>
 <script>
+(function(){
+const K="shura_archive_access_granted";
+function apply(){const g=document.getElementById("accessGate");if(g&&sessionStorage.getItem(K)==="1")g.style.display="none";}
+window.verifyArchiveAccess=async function(){
+const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
+if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
+try{const {data,error}=await sb.from("archive_access").select("id").eq("access_code",c).eq("is_active",true).limit(1);
+if(error)throw error;if(data&&data.length){sessionStorage.setItem(K,"1");document.getElementById("accessGate").style.display="none";s.textContent="";}else s.textContent="رمز الدخول غير صحيح.";
+}catch(e){s.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";}}
+document.addEventListener("DOMContentLoaded",apply);
+})();
+</script><script>
 async function changeArchiveAccessCode(){
   const input=document.getElementById("newArchiveAccessCode");
   const status=document.getElementById("accessCodeAdminStatus");
   const code=(input.value||"").trim();
-
   if(code.length<6){
     status.className="status error";
     status.textContent="يجب أن يتكون الرمز من 6 أحرف أو أرقام على الأقل.";
     return;
   }
-
   status.className="status";
   status.textContent="جارٍ تغيير الرمز...";
-
   try{
-    const {error}=await sb
-      .from("archive_access")
-      .update({access_code:code})
-      .eq("is_active",true);
-
-    if(error) throw error;
-
+    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
+    if(offError) throw offError;
+    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
+    if(addError) throw addError;
     status.className="status success";
     status.textContent="تم تغيير رمز الدخول بنجاح.";
     input.value="";
@@ -455,56 +677,5 @@ async function changeArchiveAccessCode(){
     status.textContent="تعذر تغيير الرمز: "+e.message;
   }
 }
-</script><script>
-(function(){
-  const ACCESS_KEY="shura_archive_access_granted";
-  function applyGate(){
-    const gate=document.getElementById("accessGate");
-    if(gate && sessionStorage.getItem(ACCESS_KEY)==="1"){
-      gate.style.display="none";
-    }
-  }
-  window.verifyArchiveAccess=async function(){
-  const input=document.getElementById("archiveAccessCode");
-  const status=document.getElementById("accessStatus");
-  const code=(input.value||"").trim();
-
-  if(!code){
-    status.textContent="يرجى إدخال رمز الدخول.";
-    return;
-  }
-
-  status.textContent="جارٍ التحقق...";
-
-  try{
-    const {data,error}=await sb
-      .from("archive_access")
-      .select("access_code")
-      .eq("is_active",true)
-      .maybeSingle();
-
-    if(error){
-      console.error(error);
-      status.textContent="تعذر الاتصال بقاعدة البيانات.";
-      return;
-    }
-
-    if(data && data.access_code === code){
-      sessionStorage.setItem(ACCESS_KEY,"1");
-      document.getElementById("accessGate").style.display="none";
-      status.textContent="";
-    }else{
-      status.textContent="رمز الدخول غير صحيح.";
-    }
-
-  }catch(e){
-    console.error(e);
-    status.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";
-  }
-};
-
-  document.addEventListener("DOMContentLoaded",applyGate);
-})();
-</script>
-</body>
+</script></body>
 </html>
