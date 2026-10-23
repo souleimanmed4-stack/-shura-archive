@@ -114,7 +114,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="section-title" style="margin-top:28px"><h2>سجل الوثائق</h2><span id="count" class="badge"></span></div>
 <div class="card" id="docs"><div class="empty">جاري تحميل الأرشيف...</div></div>
 </div>
-<div class="notice"><b>نظام الأرشيف:</b> الوثائق وبياناتها تُدار من قاعدة بيانات Supabase. الملفات المخزنة في مساحة خاصة ولا يتم نشر روابطها الدائمة.</div>
+<div class="notice"><b>نظام الأرشيف:</b> الوثائق وبياناتها تُدار من قاعدة بيانات Supabase، ويمكن للزوار فتح الملفات المنشورة مباشرة.</div>
 
 <div id="eventsTab" style="display:none">
 <div class="section-title" style="margin-top:28px"><h2>الفعاليات والمبادرات</h2><span id="eventCount" class="badge"></span></div>
@@ -235,10 +235,9 @@ document.getElementById("eventDetailContent").innerHTML=html;document.getElement
 function closeEventDetail(){document.getElementById("eventDetailModal").style.display="none";}
 async function openEventReport(id){
 const e=events.find(x=>String(x.id)===String(id));if(!e||!e.report_file_url)return;
-if(!currentUser){alert("هذا الملف محفوظ في مساحة خاصة. سجّل دخول لجنة الأرشفة أولاً.");openLogin();return;}
-if(!(await isCurrentUserAdmin())){alert("ليس لديك صلاحية فتح الملفات الخاصة.");return;}
-const {data,error}=await sb.storage.from("archive-files").createSignedUrl(e.report_file_url,3600);
-if(error){console.error(error);alert("تعذر إنشاء رابط مؤقت للملف.");return;}window.open(data.signedUrl,"_blank");
+const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
+if(!data||!data.publicUrl){alert("تعذر فتح ملف التقرير.");return;}
+window.open(data.publicUrl,"_blank");
 }
 async function addEvent(){
 if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
@@ -256,12 +255,9 @@ async function openDocument(id){
 const doc=docs.find(x=>String(x.id)===String(id));
 if(!doc)return;
 if(!doc.file_url){alert("لم يتم ربط ملف بهذه الوثيقة حتى الآن.");return;}
-if(!currentUser){alert("هذه الوثيقة محفوظة في مساحة خاصة. سجّل دخول لجنة الأرشفة أولاً.");openLogin();return;}
-const isAdmin=await isCurrentUserAdmin();
-if(!isAdmin){alert("ليس لديك صلاحية فتح الملفات الخاصة.");return;}
-const {data,error}=await sb.storage.from("archive-files").createSignedUrl(doc.file_url,3600);
-if(error){console.error(error);alert("تعذر إنشاء رابط مؤقت للملف.");return;}
-window.open(data.signedUrl,"_blank");
+const {data}=sb.storage.from("archive-files").getPublicUrl(doc.file_url);
+if(!data||!data.publicUrl){alert("تعذر فتح ملف الوثيقة.");return;}
+window.open(data.publicUrl,"_blank");
 }
 
 function openLogin(){
