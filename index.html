@@ -63,7 +63,8 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 .archive-stats{margin:28px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:linear-gradient(180deg,#fff,#fafafa);box-shadow:0 8px 24px rgba(0,0,0,.04)}
 .archive-stats-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.archive-stats-head h2{margin:0}.archive-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mini-stat{padding:16px;border:1px solid #edf0f3;border-radius:14px;background:#fff;text-align:center}.mini-stat b{display:block;font-size:28px;line-height:1.2}.mini-stat span{display:block;margin-top:6px;color:#667085;font-size:13px}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.chart-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fff}.chart-card h3{margin:0 0 14px}.bar-row{display:grid;grid-template-columns:100px 1fr 42px;gap:10px;align-items:center;margin:10px 0}.bar-label{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:12px;background:#edf1f5;border-radius:20px;overflow:hidden}.bar-fill{height:100%;border-radius:20px;background:#1f2937}.bar-value{text-align:left;font-weight:800;font-size:13px}.stats-note{margin-top:14px;color:#667085;font-size:12px}
 @media(max-width:760px){.archive-stats-grid,.chart-grid{grid-template-columns:1fr 1fr}.bar-row{grid-template-columns:90px 1fr 35px}}
-.contact-section{margin:30px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04)}.contact-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}.contact-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fafafa}.contact-card h3{margin-top:0}.contact-form input,.contact-form textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d8dee4;border-radius:10px;margin:7px 0;font-family:inherit}.contact-form textarea{min-height:110px;resize:vertical}.whatsapp-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:0;border-radius:10px;background:#25d366;color:#fff;font-weight:800;cursor:pointer}.contact-note{font-size:12px;color:#667085;line-height:1.7;margin-top:8px}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}}</style>
+.contact-section{margin:30px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04)}.contact-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}.contact-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fafafa}.contact-card h3{margin-top:0}.contact-form input,.contact-form textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d8dee4;border-radius:10px;margin:7px 0;font-family:inherit}.contact-form textarea{min-height:110px;resize:vertical}.whatsapp-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:0;border-radius:10px;background:#25d366;color:#fff;font-weight:800;cursor:pointer}.contact-note{font-size:12px;color:#667085;line-height:1.7;margin-top:8px}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}}.feedback-item{border:1px solid #e4e9ee;border-radius:14px;padding:15px;margin:10px 0;background:#fafafa}.feedback-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.feedback-name{font-weight:800}.feedback-date{font-size:12px;color:#7a8792}.feedback-message{white-space:pre-wrap;line-height:1.8;margin:10px 0}.feedback-actions{display:flex;gap:8px;flex-wrap:wrap}.feedback-actions button{font-size:13px}.approved{border-right:4px solid #18794e}.pending{border-right:4px solid #c58b00}
+</style>
 </head>
 <body><div id="accessGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
 <div style="background:#fff;width:min(420px,100%);padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.10);text-align:center">
@@ -145,6 +146,13 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div>
 <div id="adminEventStatus" class="status"></div>
 
+<hr style="border:0;border-top:1px solid #edf0f3;margin:22px 0">
+<h3>💬 رسائل الزوار</h3>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+<span id="feedbackCount" class="badge">0 رسالة جديدة</span>
+<button class="secondary" type="button" onclick="loadAdminFeedback()">تحديث الرسائل</button>
+</div>
+<div id="adminFeedbackList"><div class="empty">جاري تحميل الرسائل...</div></div>
 <div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>🔐 رمز دخول الزوار</h3>
 <p>غيّر رمز الدخول إلى الأرشيف متى شئت. الرمز الجديد يصبح فعالًا فورًا.</p>
@@ -465,6 +473,7 @@ return;
 currentUser=user;
 closeLogin();
 showAdmin();
+loadAdminFeedback();
 }
 
 async function isCurrentUserAdmin(){
@@ -481,6 +490,7 @@ const {data,error}=await sb.from("archive_users").select("role").eq("user_id",us
 if(!error&&data&&data.role==="admin"){
 currentUser=user;
 showAdmin();
+loadAdminFeedback();
 }
 }
 
@@ -496,6 +506,40 @@ currentUser=null;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 alert("تم تسجيل الخروج بنجاح.");
+}
+
+async function loadAdminFeedback(){
+if(!currentUser)return;
+const admin=await isCurrentUserAdmin();
+if(!admin)return;
+const box=document.getElementById("adminFeedbackList");
+box.innerHTML='<div class="empty">جاري تحميل الرسائل...</div>';
+const {data,error}=await sb.from("archive_feedback").select("*").order("created_at",{ascending:false});
+if(error){console.error(error);box.innerHTML='<div class="empty">تعذر تحميل الرسائل.</div>';return;}
+const rows=data||[];
+const newCount=rows.filter(x=>!x.is_approved).length;
+document.getElementById("feedbackCount").textContent=newCount+" رسالة غير مراجعة · "+rows.length+" إجمالي";
+if(!rows.length){box.innerHTML='<div class="empty">لا توجد رسائل حتى الآن.</div>';return;}
+box.innerHTML=rows.map(x=>{
+const date=new Date(x.created_at).toLocaleString("ar-MR");
+const name=escapeHtml(x.visitor_name||"زائر بدون اسم");
+const msg=escapeHtml(x.message||"");
+const phone=x.whatsapp?escapeHtml(x.whatsapp):"";
+const wa=x.whatsapp?'<button class="secondary" type="button" onclick="openFeedbackWhatsApp(\''+encodeURIComponent(x.whatsapp)+"\')">واتساب</button>":"";
+return '<div class="feedback-item '+(x.is_approved?'approved':'pending')+'"><div class="feedback-head"><span class="feedback-name">'+name+'</span><span class="feedback-date">'+date+'</span></div><div class="feedback-message">'+msg+'</div>'+(phone?'<div class="feedback-date">واتساب: '+phone+'</div>':'')+'<div class="feedback-actions">'+(!x.is_approved?'<button class="primary" type="button" onclick="approveFeedback('+x.id+')">تمت المراجعة</button>':'<span class="badge">تمت المراجعة ✓</span>')+wa+'<button class="danger" type="button" onclick="deleteFeedback('+x.id+')">حذف</button></div></div>';
+}).join("");
+}
+function openFeedbackWhatsApp(encoded){window.open("https://wa.me/"+decodeURIComponent(encoded),"_blank");}
+async function approveFeedback(id){
+const {error}=await sb.from("archive_feedback").update({is_approved:true}).eq("id",id);
+if(error){alert("تعذر تحديث حالة الرسالة.");return;}
+loadAdminFeedback();
+}
+async function deleteFeedback(id){
+if(!confirm("هل تريد حذف هذه الرسالة نهائيًا؟"))return;
+const {error}=await sb.from("archive_feedback").delete().eq("id",id);
+if(error){alert("تعذر حذف الرسالة.");return;}
+loadAdminFeedback();
 }
 
 async function addDocument(){
