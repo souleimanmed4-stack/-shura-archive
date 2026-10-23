@@ -187,28 +187,54 @@ await loadEvents();
 }
 
 function render(){
-const q=document.getElementById("q").value.trim().toLowerCase();
-const y=document.getElementById("year").value;
-const t=document.getElementById("type").value;
+const q=normalizeSearch(document.getElementById("q")?.value||"");
+const y=document.getElementById("year")?.value||"";
+const t=document.getElementById("type")?.value||"";
+
 const list=docs.filter(d=>{
-const text=[d.archive_number,d.year,d.document_type,d.title,d.description||""].join(" ").toLowerCase();
+const text=normalizeSearch([d.archive_number,d.year,d.document_type,d.title,d.description||"",d.document_date||""].join(" "));
 return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
 });
-document.getElementById("count").textContent=list.length+" وثيقة";
-if(!list.length){
-document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة.</div>';
-return;
+
+const eventList=(typeof events!=="undefined"?events:[]).filter(e=>{
+const text=normalizeSearch([e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" "));
+// The main search shows events alongside documents. If a document-type filter is selected,
+// keep the result focused on documents; otherwise include matching events.
+return (!q||text.includes(q))&&(!y||e.year===y)&&(!t||!t);
+});
+
+const countText=list.length+" وثيقة"+(eventList.length?" • "+eventList.length+" فعالية":"");
+document.getElementById("count").textContent=countText;
+
+if(!list.length&&!eventList.length){
+ document.getElementById("docs").innerHTML='<div class="empty">لا توجد نتائج مطابقة.</div>';
+ return;
 }
-document.getElementById("docs").innerHTML=list.map(d=>`
-<div class="doc">
-<div>
-<div class="doc-title">${escapeHtml(d.title)}</div>
-<div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>
-${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}
-</div>
-<button onclick="openDocument('${d.id}')">عرض</button>
-</div>`).join("");
+
+let html="";
+if(eventList.length){
+ html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الفعاليات</div>';
+ html+=eventList.map(e=>`<div class="doc" style="align-items:center"><div><div class="doc-title">${escapeHtml(e.title)}</div><div class="doc-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?" • "+escapeHtml(e.event_type):""}${e.committee?" • "+escapeHtml(e.committee):""}</div>${e.description?`<div class="doc-meta">${escapeHtml(e.description)}</div>`:""}</div><button onclick="goToEvent('${String(e.event_number).replace(/'/g,"\\'")}')">فتح صفحة الفعالية</button></div>`).join("");
 }
+if(list.length){
+ html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الوثائق</div>';
+ html+=list.map(d=>`<div class="doc"><div><div class="doc-title">${escapeHtml(d.title)}</div><div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}</div><button onclick="openDocument('${d.id}')">عرض</button></div>`).join("");
+}
+document.getElementById("docs").innerHTML=html;
+}
+
+function normalizeSearch(value){
+return String(value||"")
+ .toLowerCase()
+ .replace(/[أإآٱ]/g,"ا")
+ .replace(/ى/g,"ي")
+ .replace(/ة/g,"ه")
+ .replace(/ؤ/g,"و")
+ .replace(/ئ/g,"ي")
+ .replace(/[ًٌٍَُِّْـ]/g,"")
+ .trim();
+}
+
 
 
 async function loadEvents(){
