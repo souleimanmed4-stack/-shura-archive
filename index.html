@@ -904,10 +904,9 @@ async function changeArchiveAccessCode(){
   status.className="status";
   status.textContent="جارٍ تغيير الرمز...";
   try{
-    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
-    if(offError) throw offError;
-    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
-    if(addError) throw addError;
+    const {data,error}=await sb.from("archive_access").update({access_code:code,is_active:true}).eq("is_active",true).select("id");
+    if(error) throw error;
+    if(!data||data.length===0) throw new Error("لم يوجد رمز دخول نشط لتحديثه.");
     status.className="status success";
     status.textContent="تم تغيير رمز الدخول بنجاح.";
     input.value="";
