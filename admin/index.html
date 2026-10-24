@@ -1,1 +1,27 @@
-    temp
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة إدارة الأرشيف</title>
+</head>
+<body>
+<script>
+fetch('../index.html')
+  .then(r => r.text())
+  .then(html => {
+    html = html.replace(
+      '<head>',
+      '<head><base href="../">'
+    );
+    document.open();
+    document.write(html);
+    document.close();
+  })
+  .catch(() => {
+    document.body.innerHTML =
+      '<h2 style="text-align:center;margin-top:50px">تعذر تحميل لوحة الإدارة</h2>';
+  });
+</script>
+</body>
+</html>
