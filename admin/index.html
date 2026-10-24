@@ -10,17 +10,13 @@
 fetch('../index.html')
   .then(r => r.text())
   .then(html => {
-    html = html.replace(
-      '<head>',
-      '<head><base href="../">'
-    );
+    html = html.replace('<head>', '<head><base href="../">');
     document.open();
     document.write(html);
     document.close();
   })
   .catch(() => {
-    document.body.innerHTML =
-      '<h2 style="text-align:center;margin-top:50px">تعذر تحميل لوحة الإدارة</h2>';
+    document.body.innerHTML = '<h2 style="text-align:center;margin-top:50px">تعذر تحميل لوحة الإدارة</h2>';
   });
 </script>
 </body>
