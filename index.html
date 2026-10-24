@@ -87,7 +87,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="toolbar">
 <select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
 <select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
-<button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
+<button class="primary admin-entry" onclick="openLogin()" id="loginButton" style="display:none">دخول لجنة الأرشفة</button>
 </div>
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
@@ -251,6 +251,10 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div></div>
 
 <script>
+document.addEventListener("DOMContentLoaded",()=>{
+ const btn=document.getElementById("loginButton");
+ if(btn && isAdminRoute()) btn.style.display="inline-block";
+});
 const SUPABASE_URL="https://cemhdfvihcppvyfjxwsi.supabase.co";
 const SUPABASE_KEY="sb_publishable_qS1DWilYVxTmcBUMjdlb2g_-J2Gotoj";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -259,6 +263,17 @@ let docs=[];
 let events=[];
 let adminMode=false;
 let currentUser=null;
+
+// Public visitors do not see the administration entry point.
+// Admin login remains available only through the explicit admin route.
+function enableAdminEntry(){
+  const btn=document.getElementById("loginButton");
+  if(btn)btn.style.display="inline-flex";
+}
+
+if(new URLSearchParams(window.location.search).get("admin")==="1"){
+  enableAdminEntry();
+}
 
 async function loadDocuments(){
 const {data,error}=await sb.from("archive_documents").select("*").order("created_at",{ascending:false});
@@ -564,6 +579,8 @@ loadAdminFeedback();
 
 function showAdmin(){
 adminMode=true;
+const btn=document.getElementById("loginButton");
+if(btn)btn.style.display="inline-flex";
 document.getElementById("adminPanel").style.display="block";
 document.getElementById("loginButton").textContent="لجنة الأرشفة — لوحة الإدارة";
 if(currentUser)document.getElementById("adminUser").textContent="مسجل الدخول: "+(currentUser.email||"");
@@ -574,6 +591,7 @@ await sb.auth.signOut();
 currentUser=null;
 adminMode=false;
 document.getElementById("adminPanel").style.display="none";
+document.getElementById("loginButton").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 alert("تم تسجيل الخروج بنجاح.");
 }
