@@ -87,7 +87,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="toolbar">
 <select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
 <select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
-<button class="primary" onclick="openLogin()" id="loginButton" style="display:none">دخول لجنة الأرشفة</button>
+<button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
 </div>
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
@@ -729,14 +729,20 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 <script>
 (function(){
-const K="shura_archive_access_granted";
-function apply(){const g=document.getElementById("accessGate");if(!isAdminRoute()&&g&&sessionStorage.getItem(K)==="1")g.style.display="none";if(isAdminRoute()&&g)g.style.display="none";}
+function accessKey(){return isAdminRoute()?"shura_archive_access_granted_admin":"shura_archive_access_granted_public";}
+function apply(){
+ const g=document.getElementById("accessGate");
+ if(!g)return;
+ g.style.display=sessionStorage.getItem(accessKey())==="1"?"none":"flex";
+}
 window.verifyArchiveAccess=async function(){
-const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
-if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
-try{const {data,error}=await sb.from("archive_access").select("id").eq("access_code",c).eq("is_active",true).limit(1);
-if(error)throw error;if(data&&data.length){sessionStorage.setItem(K,"1");document.getElementById("accessGate").style.display="none";s.textContent="";}else s.textContent="رمز الدخول غير صحيح.";
-}catch(e){s.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";}}
+ const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
+ if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
+ try{const {data,error}=await sb.from("archive_access").select("id").eq("access_code",c).eq("is_active",true).limit(1);
+ if(error)throw error;
+ if(data&&data.length){sessionStorage.setItem(accessKey(),"1");document.getElementById("accessGate").style.display="none";s.textContent="";}else s.textContent="رمز الدخول غير صحيح.";
+ }catch(e){s.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";}
+}
 document.addEventListener("DOMContentLoaded",apply);
 })();
 </script><script>
