@@ -223,6 +223,22 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
   </div>
 </div>
 
+<!-- نافذة تعديل الوثيقة -->
+<div id="documentEditModal" class="modal" style="display:none"><div class="modal-box">
+<h2>تعديل الوثيقة</h2>
+<input id="editDocumentId" type="hidden">
+<input id="editArchiveNumber" placeholder="رقم الأرشيف">
+<select id="editDocYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
+<select id="editDocType"><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
+<input id="editDocDate" type="date">
+<input id="editDocTitle" placeholder="عنوان الوثيقة">
+<textarea id="editDocDescription" placeholder="وصف مختصر للوثيقة"></textarea>
+<div id="editDocFileWrap" style="margin-top:10px"><label><b>استبدال الملف</b></label><input id="editDocFile" type="file" accept=".pdf,image/*"><div class="doc-meta" style="margin-top:6px">استبدال الملف متاح للمدير فقط.</div></div>
+<button class="primary" style="width:100%;margin-top:12px" type="button" onclick="saveDocumentEdits()">حفظ التعديلات</button>
+<button class="secondary" style="width:100%;margin-top:8px" type="button" onclick="closeDocumentEdit()">إلغاء</button>
+<div id="documentEditStatus" class="status"></div>
+</div></div>
+
 <!-- نافذة الدخول -->
 <div id="loginModal" class="modal"><div class="modal-box">
 <h2>دخول لجنة الأرشفة</h2>
@@ -301,7 +317,7 @@ if(eventList.length){
 }
 if(list.length){
  html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الوثائق</div>';
- html+=list.map(d=>`<div class="doc"><div><div class="doc-title">${escapeHtml(d.title)}</div><div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}</div><button onclick="openDocument('${d.id}')">عرض</button></div>`).join("");
+ html+=list.map(d=>{const manage=(currentUser&&['admin','editor'].includes(currentUserRole))?`<button class="secondary" type="button" onclick="editDocument('${d.id}')">✏️ تعديل</button>`+(currentUserRole==='admin'?`<button class="danger" type="button" onclick="deleteDocument('${d.id}')">🗑️ حذف</button>`:''):'';return `<div class="doc"><div><div class="doc-title">${escapeHtml(d.title)}</div><div class="doc-meta">${escapeHtml(d.archive_number)} • ${escapeHtml(d.year)} • ${escapeHtml(d.document_type)}${d.document_date?" • "+escapeHtml(d.document_date):""}</div>${d.description?`<div class="doc-meta">${escapeHtml(d.description)}</div>`:""}</div><div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end"><button onclick="openDocument('${d.id}')">عرض</button>${manage}</div></div>`;}).join("");
 }
 document.getElementById("docs").innerHTML=html;
 }
@@ -456,6 +472,78 @@ if(!data||!data.publicUrl){alert("تعذر فتح ملف الوثيقة.");retur
 window.open(data.publicUrl,"_blank");
 }
 
+async function editDocument(id){
+if(!currentUser){openLogin();return;}
+if(!(await canEditArchive())){alert("ليس لديك صلاحية تعديل الوثائق.");return;}
+const d=docs.find(x=>String(x.id)===String(id));
+if(!d)return;
+document.getElementById("editDocumentId").value=d.id;
+document.getElementById("editArchiveNumber").value=d.archive_number||"";
+document.getElementById("editDocYear").value=d.year||"2025/2026";
+document.getElementById("editDocType").value=d.document_type||"أرشيف سنوي";
+document.getElementById("editDocDate").value=d.document_date||"";
+document.getElementById("editDocTitle").value=d.title||"";
+document.getElementById("editDocDescription").value=d.description||"";
+document.getElementById("editDocFile").value="";
+document.getElementById("editDocFileWrap").style.display=currentUserRole==='admin'?"block":"none";
+document.getElementById("documentEditStatus").textContent="";
+document.getElementById("documentEditStatus").className="status";
+document.getElementById("documentEditModal").style.display="flex";
+}
+function closeDocumentEdit(){const m=document.getElementById("documentEditModal");if(m)m.style.display="none";}
+async function saveDocumentEdits(){
+if(!currentUser){alert("يجب تسجيل الدخول أولاً.");return;}
+if(!(await canEditArchive())){alert("ليس لديك صلاحية تعديل الوثائق.");return;}
+const id=document.getElementById("editDocumentId").value;
+const d=docs.find(x=>String(x.id)===String(id));
+if(!d)return;
+const status=document.getElementById("documentEditStatus");
+const archiveNumber=document.getElementById("editArchiveNumber").value.trim();
+const year=document.getElementById("editDocYear").value;
+const type=document.getElementById("editDocType").value;
+const date=document.getElementById("editDocDate").value||null;
+const title=document.getElementById("editDocTitle").value.trim();
+const description=document.getElementById("editDocDescription").value.trim();
+const file=document.getElementById("editDocFile").files[0];
+if(!archiveNumber||!title){status.className="status error";status.textContent="أدخل رقم الأرشيف والعنوان.";return;}
+status.className="status";status.textContent="جارٍ حفظ التعديلات...";
+let newFilePath=null;
+if(file&&currentUserRole==='admin'){
+ const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+ newFilePath=year+"/"+d.id+"_"+Date.now()+"_"+safeName;
+ const {error:uploadError}=await sb.storage.from("archive-files").upload(newFilePath,file,{upsert:false});
+ if(uploadError){status.className="status error";status.textContent="فشل رفع الملف الجديد: "+uploadError.message;return;}
+}
+const updates={archive_number:archiveNumber,year,document_type:type,document_date:date,title,description};
+if(newFilePath)updates.file_url=newFilePath;
+const {error}=await sb.from("archive_documents").update(updates).eq("id",id);
+if(error){
+ if(newFilePath)await sb.storage.from("archive-files").remove([newFilePath]);
+ status.className="status error";status.textContent="تعذر حفظ التعديلات: "+error.message;return;
+}
+if(newFilePath&&d.file_url){
+ const {error:removeError}=await sb.storage.from("archive-files").remove([d.file_url]);
+ if(removeError)console.warn("تعذر حذف الملف القديم:",removeError);
+}
+status.className="status success";status.textContent="تم تحديث الوثيقة بنجاح ✅";
+await loadDocuments();
+setTimeout(closeDocumentEdit,500);
+}
+async function deleteDocument(id){
+if(!currentUser){openLogin();return;}
+if(currentUserRole!=='admin'){alert("حذف الوثائق متاح للمدير فقط.");return;}
+const d=docs.find(x=>String(x.id)===String(id));
+if(!d)return;
+if(!confirm("هل أنت متأكد من حذف هذه الوثيقة؟ سيتم حذف سجلها وملفها من التخزين إن وجد."))return;
+const {error}=await sb.from("archive_documents").delete().eq("id",id);
+if(error){alert("تعذر حذف الوثيقة: "+error.message);return;}
+if(d.file_url){
+ const {error:removeError}=await sb.storage.from("archive-files").remove([d.file_url]);
+ if(removeError){alert("تم حذف سجل الوثيقة، لكن تعذر حذف الملف من التخزين: "+removeError.message);}
+}
+await loadDocuments();
+}
+
 function isAdminRoute(){
 const path=window.location.pathname.replace(/\/+$/,'');
 return path.endsWith('/admin') || path.endsWith('/admin/index.html') || new URLSearchParams(window.location.search).get('admin')==='1';
@@ -578,8 +666,7 @@ loadAdminFeedback();
 
 async function addDocument(){
 if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
-const admin=await isCurrentUserAdmin();
-if(!admin){alert("ليس لديك صلاحية إضافة الوثائق.");return;}
+if(!(await canEditArchive())){alert("ليس لديك صلاحية إضافة الوثائق.");return;}
 const status=document.getElementById("adminStatus");
 status.className="status";status.textContent="جارٍ حفظ الوثيقة...";
 const archiveNumber=document.getElementById("archiveNumber").value.trim();
