@@ -87,7 +87,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="toolbar">
 <select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
 <select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
-<button class="primary admin-entry" onclick="openLogin()" id="loginButton" style="display:none">دخول لجنة الأرشفة</button>
+<button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
 </div>
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
@@ -120,6 +120,19 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div id="adminPanel" class="admin">
 <div class="admin-bar"><div><h2>لوحة إدارة الأرشيف</h2></div><button class="danger" onclick="logout()">تسجيل الخروج</button></div>
 <div id="adminUser" class="user-info"></div>
+<div id="roleBadge" class="user-info"></div>
+<div id="editorManagement" style="display:none;margin:18px 0;padding:16px;border:1px solid #e3e7eb;border-radius:14px;background:#fbfcfd">
+<h3>👥 إدارة المحررين</h3>
+<p style="color:#667085">من هنا يمكنك إنشاء حسابات للمحررين وتفعيلها أو تعطيلها أو حذفها. المحرر لا يملك صلاحية تغيير كلمة المرور أو رمز دخول الزوار.</p>
+<div class="form">
+<input id="editorDisplayName" placeholder="اسم المحرر">
+<input id="editorEmail" type="email" placeholder="البريد الإلكتروني">
+<input id="editorPassword" type="password" placeholder="كلمة مرور مؤقتة — 8 أحرف على الأقل">
+<div class="full"><button class="primary" type="button" onclick="createArchiveEditor()">➕ إضافة محرر</button> <button class="secondary" type="button" onclick="loadArchiveEditors()">تحديث القائمة</button></div>
+</div>
+<div id="editorAdminStatus" class="status"></div>
+<div id="archiveEditorsList"><div class="empty">جاري تحميل المحررين...</div></div>
+</div>
 <div class="form">
 <input id="archiveNumber" placeholder="رقم الأرشيف — مثال: ARCH-2026-002">
 <select id="docYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
@@ -196,22 +209,6 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <footer>© المجلس الشوري — نظام الأرشفة والتوثيق</footer>
 
 <!-- نافذة تفاصيل الفعالية -->
-<div id="eventEditModal" class="modal" style="display:none">
-<div class="modal-box detail-box">
-<h2>✏️ تعديل الفعالية أو المبادرة</h2>
-<input id="editEventId" type="hidden">
-<input id="editEventNumber" readonly placeholder="رقم الفعالية">
-<select id="editEventYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
-<input id="editEventDate" type="date">
-<input id="editEventType" placeholder="نوع الفعالية">
-<input id="editEventCommittee" placeholder="اللجنة المنظمة">
-<input id="editEventTitle" class="full" placeholder="عنوان الفعالية أو المبادرة">
-<textarea id="editEventDescription" class="full" placeholder="وصف وتفاصيل الفعالية"></textarea>
-<div class="full"><label><b>استبدال التقرير (اختياري)</b></label><input id="editEventFile" type="file" accept=".pdf,image/*"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="primary" type="button" onclick="saveEventEdits()">حفظ التعديلات</button><button class="secondary" type="button" onclick="closeEditEvent()">إلغاء</button></div>
-<div id="editEventStatus" class="status"></div>
-</div></div>
-
 <div id="eventDetailModal" class="modal" style="display:none">
   <div class="modal-box detail-box">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
@@ -251,29 +248,13 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div></div>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
- const btn=document.getElementById("loginButton");
- if(btn && isAdminRoute()) btn.style.display="inline-block";
-});
 const SUPABASE_URL="https://cemhdfvihcppvyfjxwsi.supabase.co";
 const SUPABASE_KEY="sb_publishable_qS1DWilYVxTmcBUMjdlb2g_-J2Gotoj";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let docs=[];
 let events=[];
-let adminMode=false;
 let currentUser=null;
-
-// Public visitors do not see the administration entry point.
-// Admin login remains available only through the explicit admin route.
-function enableAdminEntry(){
-  const btn=document.getElementById("loginButton");
-  if(btn)btn.style.display="inline-flex";
-}
-
-if(new URLSearchParams(window.location.search).get("admin")==="1"){
-  enableAdminEntry();
-}
 
 async function loadDocuments(){
 const {data,error}=await sb.from("archive_documents").select("*").order("created_at",{ascending:false});
@@ -393,7 +374,7 @@ const q=(document.getElementById("eventQ")?.value||"").trim().toLowerCase();
 const list=events.filter(e=>{const text=[e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" ").toLowerCase();return !q||text.includes(q);});
 document.getElementById("eventCount").textContent=list.length+" فعالية";
 if(!list.length){document.getElementById("events").innerHTML='<div class="empty">لا توجد فعاليات مطابقة.</div>';return;}
-document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button>${adminMode?`<button class="secondary" onclick="editEvent('${e.id}')">✏️ تعديل</button><button class="danger" onclick="deleteEvent('${e.id}')">🗑️ حذف</button>`:""}</div></div>`).join("");
+document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button></div></div>`).join("");
 }
 function openEvent(id){
 const e=events.find(x=>String(x.id)===String(id));
@@ -454,60 +435,9 @@ const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
 if(!data||!data.publicUrl){alert("تعذر فتح ملف التقرير.");return;}
 window.open(data.publicUrl+(e.source_page?"#page="+encodeURIComponent(e.source_page):""),"_blank");
 }
-function editEvent(id){
-const e=events.find(x=>String(x.id)===String(id));
-if(!e){alert("لم يتم العثور على الفعالية.");return;}
-document.getElementById("editEventId").value=e.id;
-document.getElementById("editEventNumber").value=e.event_number||"";
-document.getElementById("editEventYear").value=e.year||"2025/2026";
-document.getElementById("editEventDate").value=e.event_date||"";
-document.getElementById("editEventType").value=e.event_type||"";
-document.getElementById("editEventCommittee").value=e.committee||"";
-document.getElementById("editEventTitle").value=e.title||"";
-document.getElementById("editEventDescription").value=e.description||"";
-document.getElementById("editEventFile").value="";
-document.getElementById("editEventStatus").textContent="";
-document.getElementById("eventEditModal").style.display="flex";
-}
-function closeEditEvent(){document.getElementById("eventEditModal").style.display="none";}
-async function saveEventEdits(){
-if(!currentUser || !(await isCurrentUserAdmin())){alert("ليس لديك صلاحية تعديل الفعاليات.");return;}
-const status=document.getElementById("editEventStatus");
-const id=document.getElementById("editEventId").value;
-const title=document.getElementById("editEventTitle").value.trim();
-if(!title){status.className="status error";status.textContent="أدخل عنوان الفعالية.";return;}
-status.className="status";status.textContent="جارٍ حفظ التعديلات...";
-const old=events.find(x=>String(x.id)===String(id));
-const payload={year:document.getElementById("editEventYear").value,event_date:document.getElementById("editEventDate").value||null,event_type:document.getElementById("editEventType").value.trim()||null,committee:document.getElementById("editEventCommittee").value.trim()||null,title,description:document.getElementById("editEventDescription").value.trim()||null};
-const file=document.getElementById("editEventFile").files[0];
-if(file){
- const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
- const filePath="events/"+id+"_"+Date.now()+"_"+safeName;
- const {error:uploadError}=await sb.storage.from("archive-files").upload(filePath,file,{upsert:false});
- if(uploadError){status.className="status error";status.textContent="تعذر رفع التقرير الجديد: "+uploadError.message;return;}
- payload.report_file_url=filePath;
-}
-const {error}=await sb.from("archive_events").update(payload).eq("id",id);
-if(error){status.className="status error";status.textContent="تعذر حفظ التعديلات: "+error.message;return;}
-status.className="status success";status.textContent="تم حفظ التعديلات بنجاح ✅";
-await loadEvents();
-setTimeout(closeEditEvent,500);
-}
-async function deleteEvent(id){
-if(!currentUser || !(await isCurrentUserAdmin())){alert("ليس لديك صلاحية حذف الفعاليات.");return;}
-const e=events.find(x=>String(x.id)===String(id));
-if(!e)return;
-const ok=confirm("هل أنت متأكد من حذف هذه الفعالية أو المبادرة نهائيًا؟\n\n"+(e.event_number||"")+" — "+(e.title||"")+"\n\nهذا الإجراء لا يمكن التراجع عنه.");
-if(!ok)return;
-const {error}=await sb.from("archive_events").delete().eq("id",id);
-if(error){alert("تعذر حذف الفعالية: "+error.message);return;}
-await loadEvents();
-alert("تم حذف الفعالية بنجاح.");
-}
-
 async function addEvent(){
 if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
-if(!(await isCurrentUserAdmin())){alert("ليس لديك صلاحية إضافة الفعاليات.");return;}
+if(!(await canEditArchive())){alert("ليس لديك صلاحية إضافة الفعاليات.");return;}
 const status=document.getElementById("adminEventStatus");status.className="status";status.textContent="جارٍ حفظ الفعالية...";
 const eventNumber=document.getElementById("eventNumber").value.trim(),year=document.getElementById("eventYear").value,date=document.getElementById("eventDate").value||null,type=document.getElementById("eventType").value.trim(),committee=document.getElementById("eventCommittee").value.trim(),title=document.getElementById("eventTitle").value.trim(),description=document.getElementById("eventDescription").value.trim(),file=document.getElementById("eventFile").files[0];
 if(!eventNumber||!title){status.className="status error";status.textContent="أدخل رقم الفعالية والعنوان.";return;}
@@ -547,51 +477,55 @@ return;
 }
 const user=data.user;
 const {data:roleData,error:roleError}=await sb.from("archive_users").select("role").eq("user_id",user.id).single();
-if(roleError||!roleData||roleData.role!=="admin"){
+if(roleError||!roleData||!['admin','editor'].includes(roleData.role)){
 await sb.auth.signOut();
 status.className="status error";
 status.textContent="هذا الحساب لا يملك صلاحية إدارة الأرشيف.";
 return;
 }
+if(roleData.role==='editor' && roleData.is_active===false){await sb.auth.signOut();status.className="status error";status.textContent="هذا الحساب معطل حالياً.";return;}
 currentUser=user;
+currentUserRole=roleData.role;
 closeLogin();
 showAdmin();
-loadAdminFeedback();
+if(currentUserRole==='admin'){loadAdminFeedback();loadArchiveEditors();}
 }
 
-async function isCurrentUserAdmin(){
-if(!currentUser)return false;
-const {data,error}=await sb.from("archive_users").select("role").eq("user_id",currentUser.id).single();
-if(error){console.error(error);return false;}
-return data&&data.role==="admin";
+let currentUserRole=null;
+async function getCurrentUserRole(){
+if(!currentUser)return null;
+const {data,error}=await sb.from("archive_users").select("role,is_active").eq("user_id",currentUser.id).single();
+if(error){console.error(error);return null;}
+if(data?.is_active===false)return null;
+return data?.role||null;
 }
+async function isCurrentUserAdmin(){return (await getCurrentUserRole())==='admin';}
+async function canEditArchive(){const r=await getCurrentUserRole();return r==='admin'||r==='editor';}
 
 async function checkUser(){
 const {data:{user}}=await sb.auth.getUser();
 if(!user)return;
-const {data,error}=await sb.from("archive_users").select("role").eq("user_id",user.id).single();
-if(!error&&data&&data.role==="admin"){
-currentUser=user;
-showAdmin();
-loadAdminFeedback();
+const {data,error}=await sb.from("archive_users").select("role,is_active").eq("user_id",user.id).single();
+if(!error&&data&&['admin','editor'].includes(data.role)&&data.is_active!==false){
+currentUser=user;currentUserRole=data.role;showAdmin();
+if(currentUserRole==='admin'){loadAdminFeedback();loadArchiveEditors();}
 }
 }
 
 function showAdmin(){
-adminMode=true;
-const btn=document.getElementById("loginButton");
-if(btn)btn.style.display="inline-flex";
 document.getElementById("adminPanel").style.display="block";
 document.getElementById("loginButton").textContent="لجنة الأرشفة — لوحة الإدارة";
 if(currentUser)document.getElementById("adminUser").textContent="مسجل الدخول: "+(currentUser.email||"");
+document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"الصلاحية: مدير — جميع الصلاحيات":"الصلاحية: محرر — إضافة وتعديل فقط";
+document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
+const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
 }
 
 async function logout(){
 await sb.auth.signOut();
 currentUser=null;
-adminMode=false;
+currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
-document.getElementById("loginButton").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 alert("تم تسجيل الخروج بنجاح.");
 }
@@ -735,7 +669,7 @@ return;
 
 if(event==="SIGNED_OUT"){
 currentUser=null;
-adminMode=false;
+currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 return;
@@ -786,6 +720,45 @@ if(error)throw error;if(data&&data.length){sessionStorage.setItem(K,"1");documen
 document.addEventListener("DOMContentLoaded",apply);
 })();
 </script><script>
+async function invokeEditorManager(body){
+  const {data,error}=await sb.functions.invoke('manage-archive-editors',{body});
+  if(error) throw new Error(error.message||'تعذر الاتصال بخدمة إدارة المحررين.');
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+async function loadArchiveEditors(){
+  if(currentUserRole!=='admin')return;
+  const box=document.getElementById('archiveEditorsList');box.innerHTML='<div class="empty">جاري تحميل المحررين...</div>';
+  try{
+    const data=await invokeEditorManager({action:'list'});const rows=data.users||[];
+    if(!rows.length){box.innerHTML='<div class="empty">لا يوجد محررون حتى الآن.</div>';return;}
+    box.innerHTML=rows.map(x=>{
+      const name=escapeHtml(x.display_name||'بدون اسم'),email=escapeHtml(x.email||'');
+      const state=x.is_active?'<span class="badge">🟢 فعال</span>':'<span class="badge">🔴 معطل</span>';
+      const action=x.is_active?`<button class="secondary" type="button" onclick="toggleArchiveEditor('${x.id}',false)">تعطيل</button>`:`<button class="primary" type="button" onclick="toggleArchiveEditor('${x.id}',true)">تفعيل</button>`;
+      return `<div class="feedback-item"><div class="feedback-head"><span class="feedback-name">${name}</span>${state}</div><div class="feedback-date">${email}</div><div class="feedback-actions">${action}<button class="danger" type="button" onclick="deleteArchiveEditor('${x.id}','${email.replace(/'/g,"\\'")}')">حذف</button></div></div>`;
+    }).join('');
+  }catch(e){console.error(e);box.innerHTML='<div class="empty">تعذر تحميل المحررين: '+escapeHtml(e.message)+'</div>';}
+}
+async function createArchiveEditor(){
+  if(currentUserRole!=='admin')return;
+  const name=document.getElementById('editorDisplayName').value.trim();const email=document.getElementById('editorEmail').value.trim();const password=document.getElementById('editorPassword').value;
+  const status=document.getElementById('editorAdminStatus');
+  if(!email||password.length<8){status.className='status error';status.textContent='أدخل البريد وكلمة مرور من 8 أحرف على الأقل.';return;}
+  status.className='status';status.textContent='جارٍ إنشاء حساب المحرر...';
+  try{await invokeEditorManager({action:'create',display_name:name,email,password});status.className='status success';status.textContent='تم إنشاء حساب المحرر بنجاح.';document.getElementById('editorDisplayName').value='';document.getElementById('editorEmail').value='';document.getElementById('editorPassword').value='';loadArchiveEditors();}
+  catch(e){status.className='status error';status.textContent='تعذر إنشاء المحرر: '+e.message;}
+}
+async function toggleArchiveEditor(id,enable){
+  if(currentUserRole!=='admin')return;
+  try{await invokeEditorManager({action:enable?'enable':'disable',user_id:id});loadArchiveEditors();}catch(e){alert('تعذر تغيير حالة المحرر: '+e.message);}
+}
+async function deleteArchiveEditor(id,email){
+  if(currentUserRole!=='admin')return;
+  if(!confirm('هل أنت متأكد من حذف حساب المحرر '+email+'؟'))return;
+  try{await invokeEditorManager({action:'delete',user_id:id});loadArchiveEditors();}catch(e){alert('تعذر حذف المحرر: '+e.message);}
+}
+</script><script>
 async function changeArchiveAccessCode(){
   const input=document.getElementById("newArchiveAccessCode");
   const status=document.getElementById("accessCodeAdminStatus");
@@ -798,26 +771,16 @@ async function changeArchiveAccessCode(){
   status.className="status";
   status.textContent="جارٍ تغيير الرمز...";
   try{
-    const {data:userData}=await sb.auth.getUser();
-    if(!userData || !userData.user){ throw new Error("يجب تسجيل الدخول إلى حساب الإدارة أولاً."); }
-    const {data:adminData,error:adminError}=await sb.from("archive_users").select("role").eq("user_id",userData.user.id).single();
-    if(adminError || !adminData || adminData.role!=="admin") throw new Error("ليس لديك صلاحية تغيير رمز الدخول.");
-
-    // نحدّث السجل النشط نفسه بدل تعطيله ثم إنشاء سجل جديد؛ لتجنب فشل INSERT وترك الأرشيف بلا رمز فعال.
-    const {data:active,error:readError}=await sb.from("archive_access").select("id").eq("is_active",true).order("id",{ascending:false}).limit(1);
-    if(readError) throw readError;
-    if(!active || !active.length) throw new Error("لا يوجد رمز دخول نشط يمكن تحديثه.");
-
-    const {error:updateError}=await sb.from("archive_access").update({access_code:code}).eq("id",active[0].id);
-    if(updateError) throw updateError;
-
+    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
+    if(offError) throw offError;
+    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
+    if(addError) throw addError;
     status.className="status success";
-    status.textContent="تم تغيير رمز الدخول بنجاح. الرمز الجديد فعال الآن.";
+    status.textContent="تم تغيير رمز الدخول بنجاح.";
     input.value="";
   }catch(e){
-    console.error(e);
     status.className="status error";
-    status.textContent="تعذر تغيير الرمز: "+(e.message||"حدث خطأ غير متوقع.");
+    status.textContent="تعذر تغيير الرمز: "+e.message;
   }
 }
 </script></body>
