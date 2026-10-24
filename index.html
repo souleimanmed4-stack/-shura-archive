@@ -736,7 +736,7 @@ async function loadArchiveEditors(){
       const name=escapeHtml(x.display_name||'بدون اسم'),email=escapeHtml(x.email||'');
       const state=x.is_active?'<span class="badge">🟢 فعال</span>':'<span class="badge">🔴 معطل</span>';
       const action=x.is_active?`<button class="secondary" type="button" onclick="toggleArchiveEditor('${x.id}',false)">تعطيل</button>`:`<button class="primary" type="button" onclick="toggleArchiveEditor('${x.id}',true)">تفعيل</button>`;
-      return `<div class="feedback-item"><div class="feedback-head"><span class="feedback-name">${name}</span>${state}</div><div class="feedback-date">${email}</div><div class="feedback-actions">${action}<button class="danger" type="button" onclick="deleteArchiveEditor('${x.id}','${email.replace(/'/g,"\\'")}')">حذف</button></div></div>`;
+      return `<div class="feedback-item"><div class="feedback-head"><span class="feedback-name">${name}</span>${state}</div><div class="feedback-date">${email}</div><div class="feedback-actions">${action}<button class="danger" type="button" onclick="deleteArchiveEditor('${x.id}')">🗑️ حذف المحرر</button></div></div>`;
     }).join('');
   }catch(e){console.error(e);box.innerHTML='<div class="empty">تعذر تحميل المحررين: '+escapeHtml(e.message)+'</div>';}
 }
@@ -753,10 +753,22 @@ async function toggleArchiveEditor(id,enable){
   if(currentUserRole!=='admin')return;
   try{await invokeEditorManager({action:enable?'enable':'disable',user_id:id});loadArchiveEditors();}catch(e){alert('تعذر تغيير حالة المحرر: '+e.message);}
 }
-async function deleteArchiveEditor(id,email){
-  if(currentUserRole!=='admin')return;
-  if(!confirm('هل أنت متأكد من حذف حساب المحرر '+email+'؟'))return;
-  try{await invokeEditorManager({action:'delete',user_id:id});loadArchiveEditors();}catch(e){alert('تعذر حذف المحرر: '+e.message);}
+async function deleteArchiveEditor(id){
+  if(currentUserRole!=='admin'){alert('هذه العملية متاحة للمدير فقط.');return;}
+  const box=document.getElementById('archiveEditorsList');
+  const button=Array.from(box.querySelectorAll('button.danger')).find(b=>b.getAttribute('onclick')===`deleteArchiveEditor('${id}')`);
+  const email=button?.closest('.feedback-item')?.querySelector('.feedback-date')?.textContent?.trim()||'هذا المحرر';
+  if(!confirm('هل أنت متأكد من حذف حساب '+email+' نهائيًا؟\n\nسيتم حذف حساب الدخول للمحرر، ولن يستطيع تسجيل الدخول بعد ذلك.'))return;
+  if(button){button.disabled=true;button.textContent='جارٍ الحذف...';}
+  try{
+    const result=await invokeEditorManager({action:'delete',user_id:id});
+    if(!result?.ok)throw new Error(result?.error||'لم يتم تأكيد الحذف من الخادم.');
+    await loadArchiveEditors();
+  }catch(e){
+    console.error('deleteArchiveEditor failed:',e);
+    alert('تعذر حذف المحرر.\n\nالتفاصيل: '+(e?.message||e));
+    if(button){button.disabled=false;button.textContent='🗑️ حذف المحرر';}
+  }
 }
 </script><script>
 async function changeArchiveAccessCode(){
