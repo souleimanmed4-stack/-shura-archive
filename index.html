@@ -196,6 +196,22 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <footer>© المجلس الشوري — نظام الأرشفة والتوثيق</footer>
 
 <!-- نافذة تفاصيل الفعالية -->
+<div id="eventEditModal" class="modal" style="display:none">
+<div class="modal-box detail-box">
+<h2>✏️ تعديل الفعالية أو المبادرة</h2>
+<input id="editEventId" type="hidden">
+<input id="editEventNumber" readonly placeholder="رقم الفعالية">
+<select id="editEventYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
+<input id="editEventDate" type="date">
+<input id="editEventType" placeholder="نوع الفعالية">
+<input id="editEventCommittee" placeholder="اللجنة المنظمة">
+<input id="editEventTitle" class="full" placeholder="عنوان الفعالية أو المبادرة">
+<textarea id="editEventDescription" class="full" placeholder="وصف وتفاصيل الفعالية"></textarea>
+<div class="full"><label><b>استبدال التقرير (اختياري)</b></label><input id="editEventFile" type="file" accept=".pdf,image/*"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="primary" type="button" onclick="saveEventEdits()">حفظ التعديلات</button><button class="secondary" type="button" onclick="closeEditEvent()">إلغاء</button></div>
+<div id="editEventStatus" class="status"></div>
+</div></div>
+
 <div id="eventDetailModal" class="modal" style="display:none">
   <div class="modal-box detail-box">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
@@ -241,6 +257,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let docs=[];
 let events=[];
+let adminMode=false;
 let currentUser=null;
 
 async function loadDocuments(){
@@ -361,7 +378,7 @@ const q=(document.getElementById("eventQ")?.value||"").trim().toLowerCase();
 const list=events.filter(e=>{const text=[e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" ").toLowerCase();return !q||text.includes(q);});
 document.getElementById("eventCount").textContent=list.length+" فعالية";
 if(!list.length){document.getElementById("events").innerHTML='<div class="empty">لا توجد فعاليات مطابقة.</div>';return;}
-document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button></div></div>`).join("");
+document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button>${adminMode?`<button class="secondary" onclick="editEvent('${e.id}')">✏️ تعديل</button><button class="danger" onclick="deleteEvent('${e.id}')">🗑️ حذف</button>`:""}</div></div>`).join("");
 }
 function openEvent(id){
 const e=events.find(x=>String(x.id)===String(id));
@@ -422,6 +439,57 @@ const {data}=sb.storage.from("archive-files").getPublicUrl(e.report_file_url);
 if(!data||!data.publicUrl){alert("تعذر فتح ملف التقرير.");return;}
 window.open(data.publicUrl+(e.source_page?"#page="+encodeURIComponent(e.source_page):""),"_blank");
 }
+function editEvent(id){
+const e=events.find(x=>String(x.id)===String(id));
+if(!e){alert("لم يتم العثور على الفعالية.");return;}
+document.getElementById("editEventId").value=e.id;
+document.getElementById("editEventNumber").value=e.event_number||"";
+document.getElementById("editEventYear").value=e.year||"2025/2026";
+document.getElementById("editEventDate").value=e.event_date||"";
+document.getElementById("editEventType").value=e.event_type||"";
+document.getElementById("editEventCommittee").value=e.committee||"";
+document.getElementById("editEventTitle").value=e.title||"";
+document.getElementById("editEventDescription").value=e.description||"";
+document.getElementById("editEventFile").value="";
+document.getElementById("editEventStatus").textContent="";
+document.getElementById("eventEditModal").style.display="flex";
+}
+function closeEditEvent(){document.getElementById("eventEditModal").style.display="none";}
+async function saveEventEdits(){
+if(!currentUser || !(await isCurrentUserAdmin())){alert("ليس لديك صلاحية تعديل الفعاليات.");return;}
+const status=document.getElementById("editEventStatus");
+const id=document.getElementById("editEventId").value;
+const title=document.getElementById("editEventTitle").value.trim();
+if(!title){status.className="status error";status.textContent="أدخل عنوان الفعالية.";return;}
+status.className="status";status.textContent="جارٍ حفظ التعديلات...";
+const old=events.find(x=>String(x.id)===String(id));
+const payload={year:document.getElementById("editEventYear").value,event_date:document.getElementById("editEventDate").value||null,event_type:document.getElementById("editEventType").value.trim()||null,committee:document.getElementById("editEventCommittee").value.trim()||null,title,description:document.getElementById("editEventDescription").value.trim()||null};
+const file=document.getElementById("editEventFile").files[0];
+if(file){
+ const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+ const filePath="events/"+id+"_"+Date.now()+"_"+safeName;
+ const {error:uploadError}=await sb.storage.from("archive-files").upload(filePath,file,{upsert:false});
+ if(uploadError){status.className="status error";status.textContent="تعذر رفع التقرير الجديد: "+uploadError.message;return;}
+ payload.report_file_url=filePath;
+}
+const {error}=await sb.from("archive_events").update(payload).eq("id",id);
+if(error){status.className="status error";status.textContent="تعذر حفظ التعديلات: "+error.message;return;}
+status.className="status success";status.textContent="تم حفظ التعديلات بنجاح ✅";
+await loadEvents();
+setTimeout(closeEditEvent,500);
+}
+async function deleteEvent(id){
+if(!currentUser || !(await isCurrentUserAdmin())){alert("ليس لديك صلاحية حذف الفعاليات.");return;}
+const e=events.find(x=>String(x.id)===String(id));
+if(!e)return;
+const ok=confirm("هل أنت متأكد من حذف هذه الفعالية أو المبادرة نهائيًا؟\n\n"+(e.event_number||"")+" — "+(e.title||"")+"\n\nهذا الإجراء لا يمكن التراجع عنه.");
+if(!ok)return;
+const {error}=await sb.from("archive_events").delete().eq("id",id);
+if(error){alert("تعذر حذف الفعالية: "+error.message);return;}
+await loadEvents();
+alert("تم حذف الفعالية بنجاح.");
+}
+
 async function addEvent(){
 if(!currentUser){alert("يجب تسجيل الدخول أولاً.");openLogin();return;}
 if(!(await isCurrentUserAdmin())){alert("ليس لديك صلاحية إضافة الفعاليات.");return;}
@@ -495,6 +563,7 @@ loadAdminFeedback();
 }
 
 function showAdmin(){
+adminMode=true;
 document.getElementById("adminPanel").style.display="block";
 document.getElementById("loginButton").textContent="لجنة الأرشفة — لوحة الإدارة";
 if(currentUser)document.getElementById("adminUser").textContent="مسجل الدخول: "+(currentUser.email||"");
@@ -503,6 +572,7 @@ if(currentUser)document.getElementById("adminUser").textContent="مسجل الد
 async function logout(){
 await sb.auth.signOut();
 currentUser=null;
+adminMode=false;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 alert("تم تسجيل الخروج بنجاح.");
@@ -647,6 +717,7 @@ return;
 
 if(event==="SIGNED_OUT"){
 currentUser=null;
+adminMode=false;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 return;
