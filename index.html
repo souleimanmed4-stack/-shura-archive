@@ -798,16 +798,26 @@ async function changeArchiveAccessCode(){
   status.className="status";
   status.textContent="جارٍ تغيير الرمز...";
   try{
-    const {error:offError}=await sb.from("archive_access").update({is_active:false}).eq("is_active",true);
-    if(offError) throw offError;
-    const {error:addError}=await sb.from("archive_access").insert({access_code:code,is_active:true});
-    if(addError) throw addError;
+    const {data:userData}=await sb.auth.getUser();
+    if(!userData || !userData.user){ throw new Error("يجب تسجيل الدخول إلى حساب الإدارة أولاً."); }
+    const {data:adminData,error:adminError}=await sb.from("archive_users").select("role").eq("user_id",userData.user.id).single();
+    if(adminError || !adminData || adminData.role!=="admin") throw new Error("ليس لديك صلاحية تغيير رمز الدخول.");
+
+    // نحدّث السجل النشط نفسه بدل تعطيله ثم إنشاء سجل جديد؛ لتجنب فشل INSERT وترك الأرشيف بلا رمز فعال.
+    const {data:active,error:readError}=await sb.from("archive_access").select("id").eq("is_active",true).order("id",{ascending:false}).limit(1);
+    if(readError) throw readError;
+    if(!active || !active.length) throw new Error("لا يوجد رمز دخول نشط يمكن تحديثه.");
+
+    const {error:updateError}=await sb.from("archive_access").update({access_code:code}).eq("id",active[0].id);
+    if(updateError) throw updateError;
+
     status.className="status success";
-    status.textContent="تم تغيير رمز الدخول بنجاح.";
+    status.textContent="تم تغيير رمز الدخول بنجاح. الرمز الجديد فعال الآن.";
     input.value="";
   }catch(e){
+    console.error(e);
     status.className="status error";
-    status.textContent="تعذر تغيير الرمز: "+e.message;
+    status.textContent="تعذر تغيير الرمز: "+(e.message||"حدث خطأ غير متوقع.");
   }
 }
 </script></body>
