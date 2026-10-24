@@ -613,6 +613,7 @@ if(currentUser)document.getElementById("adminUser").textContent="مسجل الد
 document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"الصلاحية: مدير — جميع الصلاحيات":"الصلاحية: محرر — إضافة وتعديل فقط";
 document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
+render();
 }
 
 async function logout(){
@@ -627,6 +628,7 @@ const loginStatus=document.getElementById("loginStatus");
 if(loginStatus){loginStatus.className="status";loginStatus.textContent="";}
 const loginModal=document.getElementById("loginModal");
 if(loginModal) loginModal.style.display="flex";
+render();
 alert("تم تسجيل الخروج بنجاح.");
 }
 
