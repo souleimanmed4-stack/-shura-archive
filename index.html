@@ -87,7 +87,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="toolbar">
 <select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
 <select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
-<button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
+<button class="primary" onclick="openLogin()" id="loginButton" style="display:none">دخول لجنة الأرشفة</button>
 </div>
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
@@ -456,7 +456,12 @@ if(!data||!data.publicUrl){alert("تعذر فتح ملف الوثيقة.");retur
 window.open(data.publicUrl,"_blank");
 }
 
+function isAdminRoute(){
+const path=window.location.pathname.replace(/\/+$/,'');
+return path.endsWith('/admin') || path.endsWith('/admin/index.html') || new URLSearchParams(window.location.search).get('admin')==='1';
+}
 function openLogin(){
+if(!isAdminRoute()){alert("صفحة الإدارة غير متاحة للزوار.");return;}
 document.getElementById("loginModal").style.display="flex";
 document.getElementById("loginStatus").textContent="";
 }
@@ -503,6 +508,7 @@ async function isCurrentUserAdmin(){return (await getCurrentUserRole())==='admin
 async function canEditArchive(){const r=await getCurrentUserRole();return r==='admin'||r==='editor';}
 
 async function checkUser(){
+if(!isAdminRoute())return;
 const {data:{user}}=await sb.auth.getUser();
 if(!user)return;
 const {data,error}=await sb.from("archive_users").select("role,is_active").eq("user_id",user.id).single();
@@ -708,9 +714,23 @@ async function sendResetEmail(){
 }
 </script>
 <script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const admin=isAdminRoute();
+ const loginButton=document.getElementById('loginButton');
+ const adminPanel=document.getElementById('adminPanel');
+ if(loginButton) loginButton.style.display=admin?'inline-block':'none';
+ if(adminPanel&&!admin) adminPanel.style.display='none';
+ if(admin){
+   const {data}=sb.auth.getUser().then(({data})=>{
+     if(!data.user) openLogin();
+   }).catch(()=>{});
+ }
+});
+</script>
+<script>
 (function(){
 const K="shura_archive_access_granted";
-function apply(){const g=document.getElementById("accessGate");if(g&&sessionStorage.getItem(K)==="1")g.style.display="none";}
+function apply(){const g=document.getElementById("accessGate");if(!isAdminRoute()&&g&&sessionStorage.getItem(K)==="1")g.style.display="none";if(isAdminRoute()&&g)g.style.display="none";}
 window.verifyArchiveAccess=async function(){
 const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
 if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
