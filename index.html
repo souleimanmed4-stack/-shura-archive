@@ -166,6 +166,19 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <button class="secondary" type="button" onclick="loadAdminFeedback()">تحديث الرسائل</button>
 </div>
 <div id="adminFeedbackList"><div class="empty">جاري تحميل الرسائل...</div></div>
+
+<div id="visitorStatsAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
+<h3>📊 إحصائيات زوار الأرشيف</h3>
+<div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+<div class="contact-card"><b>إجمالي الزيارات</b><div id="totalVisits" style="font-size:25px;font-weight:800;margin-top:6px">—</div></div>
+<div class="contact-card"><b>الزوار الفريدون</b><div id="uniqueVisitors" style="font-size:25px;font-weight:800;margin-top:6px">—</div></div>
+<div class="contact-card"><b>زيارات اليوم</b><div id="todayVisits" style="font-size:25px;font-weight:800;margin-top:6px">—</div></div>
+<div class="contact-card"><b>زيارات هذا الشهر</b><div id="monthVisits" style="font-size:25px;font-weight:800;margin-top:6px">—</div></div>
+</div>
+<div id="lastVisit" class="contact-note" style="margin-top:10px">آخر زيارة: —</div>
+<button class="secondary" type="button" onclick="loadVisitorStats()" style="margin-top:10px">تحديث الإحصائيات</button>
+<div id="visitorStatsStatus" class="status"></div>
+</div>
 <div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>🔐 رمز دخول الزوار</h3>
 <p>غيّر رمز الدخول إلى الأرشيف متى شئت. الرمز الجديد يصبح فعالًا فورًا.</p>
@@ -581,7 +594,7 @@ currentUser=user;
 currentUserRole=roleData.role;
 closeLogin();
 showAdmin();
-if(currentUserRole==='admin'){loadAdminFeedback();loadArchiveEditors();}
+if(currentUserRole==='admin'){loadAdminFeedback();loadArchiveEditors();loadVisitorStats();}
 }
 
 let currentUserRole=null;
@@ -823,19 +836,60 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 <script>
+async function recordArchiveVisit(){
+  try{
+    const route=isAdminRoute()?"admin":"public";
+    const sessionKey="shura_archive_visit_recorded_"+route;
+    if(sessionStorage.getItem(sessionKey)==="1") return;
+    let visitorId=localStorage.getItem("shura_archive_visitor_id");
+    if(!visitorId){
+      visitorId=(crypto.randomUUID?crypto.randomUUID():"v_"+Date.now()+"_"+Math.random().toString(36).slice(2));
+      localStorage.setItem("shura_archive_visitor_id",visitorId);
+    }
+    const {error}=await sb.from("archive_visits").insert({visitor_id:visitorId,route});
+    if(!error) sessionStorage.setItem(sessionKey,"1");
+    else console.error("archive visit record failed:",error);
+  }catch(e){console.error("archive visit record failed:",e);}
+}
+
+async function loadVisitorStats(){
+  if(currentUserRole!=="admin")return;
+  const status=document.getElementById("visitorStatsStatus");
+  try{
+    const {data,error}=await sb.from("archive_visits").select("created_at,visitor_id,route").order("created_at",{ascending:false});
+    if(error)throw error;
+    const rows=data||[];
+    const now=new Date();
+    const startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const startMonth=new Date(now.getFullYear(),now.getMonth(),1);
+    const today=rows.filter(r=>new Date(r.created_at)>=startToday).length;
+    const month=rows.filter(r=>new Date(r.created_at)>=startMonth).length;
+    const unique=new Set(rows.map(r=>r.visitor_id)).size;
+    document.getElementById("totalVisits").textContent=rows.length.toLocaleString("ar-MR");
+    document.getElementById("uniqueVisitors").textContent=unique.toLocaleString("ar-MR");
+    document.getElementById("todayVisits").textContent=today.toLocaleString("ar-MR");
+    document.getElementById("monthVisits").textContent=month.toLocaleString("ar-MR");
+    document.getElementById("lastVisit").textContent=rows.length?"آخر زيارة: "+new Date(rows[0].created_at).toLocaleString("ar-MR")+" — "+(rows[0].route==="admin"?"مسار الإدارة":"المسار العام"):"آخر زيارة: لا توجد زيارات بعد";
+    status.className="status success";status.textContent="تم تحديث الإحصائيات.";
+  }catch(e){
+    console.error(e);
+    status.className="status error";status.textContent="تعذر تحميل إحصائيات الزوار: "+(e.message||e);
+  }
+}
+
 (function(){
 function accessKey(){return isAdminRoute()?"shura_archive_access_granted_admin":"shura_archive_access_granted_public";}
 function apply(){
  const g=document.getElementById("accessGate");
  if(!g)return;
- g.style.display=sessionStorage.getItem(accessKey())==="1"?"none":"flex";
+ const granted=sessionStorage.getItem(accessKey())==="1"; g.style.display=granted?"none":"flex"; if(granted) recordArchiveVisit();
 }
 window.verifyArchiveAccess=async function(){
  const c=(document.getElementById("archiveAccessCode").value||"").trim(),s=document.getElementById("accessStatus");
  if(!c){s.textContent="يرجى إدخال رمز الدخول.";return;} s.textContent="جارٍ التحقق...";
  try{const {data,error}=await sb.from("archive_access").select("id").eq("access_code",c).eq("is_active",true).limit(1);
  if(error)throw error;
- if(data&&data.length){sessionStorage.setItem(accessKey(),"1");document.getElementById("accessGate").style.display="none";s.textContent="";}else s.textContent="رمز الدخول غير صحيح.";
+ if(data&&data.length){sessionStorage.setItem(accessKey(),"1");document.getElementById("accessGate").style.display="none";s.textContent="";recordArchiveVisit();}else s.textContent="رمز الدخول غير صحيح.";
  }catch(e){s.textContent="تعذر التحقق من الرمز. حاول مرة أخرى.";}
 }
 document.addEventListener("DOMContentLoaded",apply);
