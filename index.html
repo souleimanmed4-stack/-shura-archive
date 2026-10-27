@@ -85,17 +85,13 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div>
 
 <div class="toolbar">
-<select id="year" onchange="render()"><option value="">كل السنوات</option><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
+<select id="year" onchange="render()"><option value="">كل السنوات</option></select>
 <select id="type" onchange="render()"><option value="">كل أنواع الوثائق</option><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
 <button class="primary" onclick="openLogin()" id="loginButton">دخول لجنة الأرشفة</button>
 </div>
 
 <div class="section-title"><h2>الأرشيف السنوي</h2></div>
-<div class="years">
-<div class="card"><div class="year">2023/2024</div><p>الأرشيف السنوي الأول<br>إجمالي صفحات الملف: <b>93</b></p><span class="badge">السنة الأولى</span></div>
-<div class="card"><div class="year">2024/2025</div><p>الأرشيف السنوي الثاني<br>إجمالي صفحات الملف: <b>74</b></p><span class="badge">السنة الثانية</span></div>
-<div class="card"><div class="year">2025/2026</div><p>الأرشيف السنوي الثالث<br>إجمالي صفحات الملف: <b>75</b></p><span class="badge">السنة الثالثة</span></div>
-</div>
+<div class="years" id="annualYears"><div class="empty">جاري تحميل السنوات المؤرشفة...</div></div>
 
 <section class="archive-stats" id="archiveStats">
 <div class="archive-stats-head"><h2>📊 إحصاءات الأرشيف</h2><span class="badge">مؤشرات حية</span></div>
@@ -121,6 +117,21 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div class="admin-bar"><div><h2>لوحة إدارة الأرشيف</h2></div><button class="danger" onclick="logout()">تسجيل الخروج</button></div>
 <div id="adminUser" class="user-info"></div>
 <div id="roleBadge" class="user-info"></div>
+<div id="yearManagement" style="display:none;margin:18px 0;padding:16px;border:1px solid #e3e7eb;border-radius:14px;background:#fbfcfd">
+<h3>📚 إدارة السنوات</h3>
+<p style="color:#667085">يمكن للمدير إضافة سنة أرشيفية جديدة أو تعديل بيانات السنوات الحالية. يمكن ربط ملف السنة لاحقًا من إدارة الوثائق.</p>
+<div class="form">
+<input id="archiveYearValue" placeholder="السنة — مثال: 2026/2027">
+<input id="archiveYearTitle" placeholder="عنوان السنة — مثال: الأرشيف السنوي الرابع">
+<textarea id="archiveYearDescription" class="full" placeholder="وصف مختصر للسنة"></textarea>
+<input id="archiveYearPages" type="number" min="0" placeholder="عدد صفحات الأرشيف (اختياري)">
+<input id="archiveYearSequence" type="number" min="1" placeholder="الترتيب — مثال: 4">
+<label class="full" style="display:flex;align-items:center;gap:8px"><input id="archiveYearPublic" type="checkbox" checked style="width:auto"> إظهار السنة للزوار</label>
+<div class="full"><button class="primary" type="button" onclick="saveArchiveYear()">💾 حفظ السنة</button> <button class="secondary" type="button" onclick="resetArchiveYearForm()">إلغاء التعديل</button></div>
+</div>
+<div id="yearAdminStatus" class="status"></div>
+<div id="archiveYearsList"><div class="empty">جاري تحميل السنوات...</div></div>
+</div>
 <div id="editorManagement" style="display:none;margin:18px 0;padding:16px;border:1px solid #e3e7eb;border-radius:14px;background:#fbfcfd">
 <h3>👥 إدارة المحررين</h3>
 <p style="color:#667085">من هنا يمكنك إنشاء حسابات للمحررين وتفعيلها أو تعطيلها أو حذفها. المحرر لا يملك صلاحية تغيير كلمة المرور أو رمز دخول الزوار.</p>
@@ -135,7 +146,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div>
 <div class="form">
 <input id="archiveNumber" placeholder="رقم الأرشيف — مثال: ARCH-2026-002">
-<select id="docYear"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026">2025/2026</option></select>
+<select id="docYear"></select>
 <select id="docType"><option>أرشيف سنوي</option><option>تقارير</option><option>قرارات</option><option>مبادرات</option><option>أنشطة وفعاليات</option><option>بيانات</option><option>مالية ومراسلات</option></select>
 <input id="docDate" type="date">
 <input id="docTitle" class="full" placeholder="عنوان الوثيقة">
@@ -148,7 +159,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <h3>إضافة فعالية أو مبادرة</h3>
 <div class="form">
 <input id="eventNumber" placeholder="رقم الفعالية — يولد تلقائيًا" readonly>
-<select id="eventYear" onchange="prepareNextEventNumber()"><option value="2023/2024">2023/2024</option><option value="2024/2025">2024/2025</option><option value="2025/2026" selected>2025/2026</option></select>
+<select id="eventYear" onchange="prepareNextEventNumber()"></select>
 <input id="eventDate" type="date">
 <input id="eventType" placeholder="نوع الفعالية — مثال: أيام تربوية">
 <input id="eventCommittee" placeholder="اللجنة المنظمة">
@@ -283,7 +294,104 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let docs=[];
 let events=[];
+let archiveYears=[];
+let editingArchiveYearId=null;
 let currentUser=null;
+
+async function loadArchiveYears(){
+  const {data,error}=await sb.from("archive_years").select("*").eq("is_public",true).order("sequence_number",{ascending:true}).order("year",{ascending:true});
+  if(error){
+    console.error(error);
+    archiveYears=[];
+    const box=document.getElementById("annualYears");
+    if(box) box.innerHTML='<div class="empty">تعذر تحميل السنوات المؤرشفة.</div>';
+    return;
+  }
+  archiveYears=data||[];
+  renderYearControls();
+  renderAnnualYears();
+  if(currentUserRole==='admin') loadAdminArchiveYears();
+}
+
+function renderYearControls(){
+  const filter=document.getElementById("year");
+  const docYear=document.getElementById("docYear");
+  const eventYear=document.getElementById("eventYear");
+  const selectedFilter=filter?.value||"";
+  const selectedDoc=docYear?.value||"";
+  const selectedEvent=eventYear?.value||"";
+  if(filter){filter.innerHTML='<option value="">كل السنوات</option>'+archiveYears.map(y=>`<option value="${escapeHtml(y.year)}">${escapeHtml(y.year)}</option>`).join(""); if(archiveYears.some(y=>y.year===selectedFilter)) filter.value=selectedFilter;}
+  if(docYear){docYear.innerHTML=archiveYears.map(y=>`<option value="${escapeHtml(y.year)}">${escapeHtml(y.year)}</option>`).join(""); if(archiveYears.some(y=>y.year===selectedDoc)) docYear.value=selectedDoc; else if(archiveYears.length) docYear.value=archiveYears[archiveYears.length-1].year;}
+  if(eventYear){eventYear.innerHTML=archiveYears.map(y=>`<option value="${escapeHtml(y.year)}">${escapeHtml(y.year)}</option>`).join(""); if(archiveYears.some(y=>y.year===selectedEvent)) eventYear.value=selectedEvent; else if(archiveYears.length) eventYear.value=archiveYears[archiveYears.length-1].year;}
+  const count=document.getElementById("yearCount"); if(count) count.textContent=archiveYears.length;
+}
+
+function renderAnnualYears(){
+  const box=document.getElementById("annualYears"); if(!box)return;
+  if(!archiveYears.length){box.innerHTML='<div class="empty">لا توجد سنوات مؤرشفة حتى الآن.</div>';return;}
+  box.innerHTML=archiveYears.map((y,i)=>{
+    const doc=docs.find(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    const fileButton=doc?`<button type="button" onclick="openDocument('${doc.id}')">عرض الأرشيف</button>`:'';
+    const pages=y.page_count!=null?`<br>إجمالي صفحات الملف: <b>${Number(y.page_count).toLocaleString('ar-MR')}</b>`:'';
+    return `<div class="card"><div class="year">${escapeHtml(y.year)}</div><p>${escapeHtml(y.title)}${pages}</p><span class="badge">السنة ${Number(y.sequence_number||i+1).toLocaleString('ar-MR')}</span>${y.description?`<div class="doc-meta" style="margin-top:8px">${escapeHtml(y.description)}</div>`:''}${fileButton?`<div style="margin-top:12px">${fileButton}</div>`:''}</div>`;
+  }).join("");
+}
+
+function resetArchiveYearForm(){
+  editingArchiveYearId=null;
+  ["archiveYearValue","archiveYearTitle","archiveYearDescription","archiveYearPages","archiveYearSequence"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const pub=document.getElementById("archiveYearPublic");if(pub)pub.checked=true;
+  const st=document.getElementById("yearAdminStatus");if(st){st.className="status";st.textContent="";}
+}
+
+async function saveArchiveYear(){
+  if(currentUserRole!=='admin'){alert("إدارة السنوات متاحة للمدير فقط.");return;}
+  const status=document.getElementById("yearAdminStatus");
+  const year=document.getElementById("archiveYearValue").value.trim();
+  const title=document.getElementById("archiveYearTitle").value.trim();
+  const description=document.getElementById("archiveYearDescription").value.trim()||null;
+  const pageRaw=document.getElementById("archiveYearPages").value.trim();
+  const sequenceRaw=document.getElementById("archiveYearSequence").value.trim();
+  const page_count=pageRaw?Number(pageRaw):null;
+  const sequence_number=sequenceRaw?Number(sequenceRaw):archiveYears.length+1;
+  const is_public=document.getElementById("archiveYearPublic").checked;
+  if(!year||!title){status.className="status error";status.textContent="أدخل السنة والعنوان.";return;}
+  if(page_count!==null&&(!Number.isInteger(page_count)||page_count<0)){status.className="status error";status.textContent="عدد الصفحات يجب أن يكون رقمًا صحيحًا موجبًا أو صفرًا.";return;}
+  if(!Number.isInteger(sequence_number)||sequence_number<1){status.className="status error";status.textContent="الترتيب يجب أن يكون رقمًا صحيحًا يبدأ من 1.";return;}
+  status.className="status";status.textContent="جارٍ حفظ السنة...";
+  const payload={year,title,description,page_count,sequence_number,is_public};
+  const result=editingArchiveYearId
+    ? await sb.from("archive_years").update(payload).eq("id",editingArchiveYearId)
+    : await sb.from("archive_years").insert(payload);
+  if(result.error){console.error(result.error);status.className="status error";status.textContent="تعذر حفظ السنة: "+result.error.message;return;}
+  status.className="status success";status.textContent=editingArchiveYearId?"تم تعديل السنة بنجاح ✅":"تمت إضافة السنة بنجاح ✅";
+  resetArchiveYearForm();
+  await loadArchiveYears();
+}
+
+async function editArchiveYear(id){
+  if(currentUserRole!=='admin')return;
+  const {data:y,error}=await sb.from("archive_years").select("*").eq("id",id).single();
+  if(error||!y){alert("تعذر تحميل بيانات السنة.");return;}
+  editingArchiveYearId=y.id;
+  document.getElementById("archiveYearValue").value=y.year||"";
+  document.getElementById("archiveYearTitle").value=y.title||"";
+  document.getElementById("archiveYearDescription").value=y.description||"";
+  document.getElementById("archiveYearPages").value=y.page_count??"";
+  document.getElementById("archiveYearSequence").value=y.sequence_number??"";
+  document.getElementById("archiveYearPublic").checked=y.is_public!==false;
+  document.getElementById("yearAdminStatus").textContent="جاري تعديل السنة: "+y.year;
+  document.getElementById("yearManagement")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function loadAdminArchiveYears(){
+  if(currentUserRole!=='admin')return;
+  const {data,error}=await sb.from("archive_years").select("*").order("sequence_number",{ascending:true}).order("year",{ascending:true});
+  const box=document.getElementById("archiveYearsList");if(!box)return;
+  if(error){box.innerHTML='<div class="empty">تعذر تحميل قائمة السنوات.</div>';return;}
+  const rows=data||[];
+  box.innerHTML=rows.length?rows.map(y=>`<div class="feedback-item"><div class="feedback-head"><span class="feedback-name">${escapeHtml(y.year)} — ${escapeHtml(y.title)}</span><span class="badge">${y.is_public?'🟢 منشورة':'🔴 مخفية'}</span></div><div class="feedback-date">الترتيب: ${Number(y.sequence_number||0)}${y.page_count!=null?' • الصفحات: '+Number(y.page_count).toLocaleString('ar-MR'):''}</div>${y.description?`<div class="feedback-message">${escapeHtml(y.description)}</div>`:''}<div class="feedback-actions"><button class="secondary" type="button" onclick="editArchiveYear('${y.id}')">✏️ تعديل</button></div></div>`).join(""):'<div class="empty">لا توجد سنوات.</div>';
+}
 
 async function loadDocuments(){
 const {data,error}=await sb.from("archive_documents").select("*").order("created_at",{ascending:false});
@@ -294,6 +402,7 @@ return;
 }
 docs=data||[];
 document.getElementById("docCount").textContent=docs.length;
+renderAnnualYears();
 render();
 await loadEvents();
 }
@@ -361,7 +470,7 @@ events.forEach(e=>{
  const committee=e.committee||"غير محددة";
  committeeMap[committee]=(committeeMap[committee]||0)+1;
 });
-const years=["2023/2024","2024/2025","2025/2026"].filter(y=>yearMap[y]!==undefined);
+const years=archiveYears.map(y=>y.year).filter(y=>yearMap[y]!==undefined);
 const maxYear=Math.max(1,...years.map(y=>yearMap[y]||0));
 const makeBars=(map,maxItems=8)=>{
  const entries=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,maxItems);
@@ -625,6 +734,8 @@ document.getElementById("loginButton").textContent="لجنة الأرشفة — 
 if(currentUser)document.getElementById("adminUser").textContent="مسجل الدخول: "+(currentUser.email||"");
 document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"الصلاحية: مدير — جميع الصلاحيات":"الصلاحية: محرر — إضافة وتعديل فقط";
 document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
+document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
+if(currentUserRole==='admin') loadAdminArchiveYears();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
 render();
 }
@@ -794,6 +905,7 @@ checkUser();
 }
 });
 
+loadArchiveYears();
 loadDocuments();
 checkUser();
 </script>
