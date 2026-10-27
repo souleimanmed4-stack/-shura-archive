@@ -330,7 +330,8 @@ function renderAnnualYears(){
   const box=document.getElementById("annualYears"); if(!box)return;
   if(!archiveYears.length){box.innerHTML='<div class="empty">لا توجد سنوات مؤرشفة حتى الآن.</div>';return;}
   box.innerHTML=archiveYears.map((y,i)=>{
-    const doc=docs.find(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    const candidates=docs.filter(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false&&d.file_url);
+    const doc=candidates.find(d=>/أرشيف المجلس الشوري/.test(String(d.title||''))) || candidates[0] || null;
     const fileButton=doc?`<button type="button" onclick="openDocument('${doc.id}')">عرض الأرشيف</button>`:'';
     const pages=y.page_count!=null?`<br>إجمالي صفحات الملف: <b>${Number(y.page_count).toLocaleString('ar-MR')}</b>`:'';
     return `<div class="card"><div class="year">${escapeHtml(y.year)}</div><p>${escapeHtml(y.title)}${pages}</p><span class="badge">السنة ${Number(y.sequence_number||i+1).toLocaleString('ar-MR')}</span>${y.description?`<div class="doc-meta" style="margin-top:8px">${escapeHtml(y.description)}</div>`:''}${fileButton?`<div style="margin-top:12px">${fileButton}</div>`:''}</div>`;
@@ -905,9 +906,11 @@ checkUser();
 }
 });
 
-loadArchiveYears();
-loadDocuments();
-checkUser();
+(async()=>{
+  await loadArchiveYears();
+  await loadDocuments();
+  await checkUser();
+})();
 </script>
 
 
