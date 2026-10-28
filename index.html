@@ -170,6 +170,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div>
 <div id="adminEventStatus" class="status"></div>
 
+<div id="adminVisitorPrivate" style="display:none">
 <hr style="border:0;border-top:1px solid #edf0f3;margin:22px 0">
 <h3>💬 رسائل الزوار</h3>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
@@ -189,6 +190,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div id="lastVisit" class="contact-note" style="margin-top:10px">آخر زيارة: —</div>
 <button class="secondary" type="button" onclick="loadVisitorStats()" style="margin-top:10px">تحديث الإحصائيات</button>
 <div id="visitorStatsStatus" class="status"></div>
+</div>
 </div>
 <div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>🔐 رمز دخول الزوار</h3>
@@ -738,6 +740,7 @@ document.getElementById("editorManagement").style.display=currentUserRole==='adm
 document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
 if(currentUserRole==='admin') loadAdminArchiveYears();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
+const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor)privateVisitor.style.display=currentUserRole==='admin'?"block":"none";
 render();
 }
 
@@ -746,6 +749,7 @@ await sb.auth.signOut();
 currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
+const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor)privateVisitor.style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 const passwordInput=document.getElementById("password");
 if(passwordInput) passwordInput.value="";
@@ -897,6 +901,7 @@ if(event==="SIGNED_OUT"){
 currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
+const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor)privateVisitor.style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 return;
 }
