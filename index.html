@@ -242,6 +242,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
     <div id="eventDetailContent"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
       <button type="button" class="primary" onclick="copyCurrentEventLink()">نسخ رابط الفعالية</button>
+      <span id="eventDetailAdminActions" style="display:none"></span>
       <button type="button" class="secondary" onclick="closeEventDetail()">إغلاق</button>
     </div>
   </div>
@@ -586,6 +587,13 @@ if(e.description)html+=`<div class="detail-row"><b>الوصف</b>${escapeHtml(e.
 if(e.source_page)html+=`<div class="detail-row"><b>صفحة المصدر</b>الصفحة ${escapeHtml(String(e.source_page))} من الأرشيف السنوي المرتبط.</div>`;
 if(e.report_file_url)html+=`<div style="margin-top:16px"><button class="primary" type="button" onclick="openEventReport('${String(e.id)}')">عرض التقرير / الملف</button></div>`;
 content.innerHTML=html;
+const adminActions=document.getElementById("eventDetailAdminActions");
+if(adminActions){
+  adminActions.innerHTML=(currentUser&&currentUserRole==='admin')
+    ? `<button type="button" class="primary" onclick="closeEventDetail();editEvent('${String(e.id)}')">✏️ تعديل الفعالية</button>`
+    : "";
+  adminActions.style.display=(currentUser&&currentUserRole==='admin')?"inline-flex":"none";
+}
 modal.style.display="flex";
 const url=new URL(window.location.href);
 url.searchParams.set("event",e.event_number);
