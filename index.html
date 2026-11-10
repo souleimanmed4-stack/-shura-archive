@@ -63,8 +63,7 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 .archive-stats{margin:28px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:linear-gradient(180deg,#fff,#fafafa);box-shadow:0 8px 24px rgba(0,0,0,.04)}
 .archive-stats-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.archive-stats-head h2{margin:0}.archive-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mini-stat{padding:16px;border:1px solid #edf0f3;border-radius:14px;background:#fff;text-align:center}.mini-stat b{display:block;font-size:28px;line-height:1.2}.mini-stat span{display:block;margin-top:6px;color:#667085;font-size:13px}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.chart-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fff}.chart-card h3{margin:0 0 14px}.bar-row{display:grid;grid-template-columns:100px 1fr 42px;gap:10px;align-items:center;margin:10px 0}.bar-label{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:12px;background:#edf1f5;border-radius:20px;overflow:hidden}.bar-fill{height:100%;border-radius:20px;background:#1f2937}.bar-value{text-align:left;font-weight:800;font-size:13px}.stats-note{margin-top:14px;color:#667085;font-size:12px}
 @media(max-width:760px){.archive-stats-grid,.chart-grid{grid-template-columns:1fr 1fr}.bar-row{grid-template-columns:90px 1fr 35px}}
-.contact-section{margin:30px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04)}.contact-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}.contact-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fafafa}.contact-card h3{margin-top:0}.contact-form input,.contact-form textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d8dee4;border-radius:10px;margin:7px 0;font-family:inherit}.contact-form textarea{min-height:110px;resize:vertical}.whatsapp-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:0;border-radius:10px;background:#25d366;color:#fff;font-weight:800;cursor:pointer}.contact-note{font-size:12px;color:#667085;line-height:1.7;margin-top:8px}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}}.admin-only-private{display:none}
-.feedback-item{border:1px solid #e4e9ee;border-radius:14px;padding:15px;margin:10px 0;background:#fafafa}.feedback-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.feedback-name{font-weight:800}.feedback-date{font-size:12px;color:#7a8792}.feedback-message{white-space:pre-wrap;line-height:1.8;margin:10px 0}.feedback-actions{display:flex;gap:8px;flex-wrap:wrap}.feedback-actions button{font-size:13px}.approved{border-right:4px solid #18794e}.pending{border-right:4px solid #c58b00}
+.contact-section{margin:30px 0;padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04)}.contact-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}.contact-card{padding:18px;border:1px solid #edf0f3;border-radius:14px;background:#fafafa}.contact-card h3{margin-top:0}.contact-form input,.contact-form textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d8dee4;border-radius:10px;margin:7px 0;font-family:inherit}.contact-form textarea{min-height:110px;resize:vertical}.whatsapp-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:0;border-radius:10px;background:#25d366;color:#fff;font-weight:800;cursor:pointer}.contact-note{font-size:12px;color:#667085;line-height:1.7;margin-top:8px}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}}.feedback-item{border:1px solid #e4e9ee;border-radius:14px;padding:15px;margin:10px 0;background:#fafafa}.feedback-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.feedback-name{font-weight:800}.feedback-date{font-size:12px;color:#7a8792}.feedback-message{white-space:pre-wrap;line-height:1.8;margin:10px 0}.feedback-actions{display:flex;gap:8px;flex-wrap:wrap}.feedback-actions button{font-size:13px}.approved{border-right:4px solid #18794e}.pending{border-right:4px solid #c58b00}
 </style>
 </head>
 <body><div id="accessGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
@@ -171,7 +170,6 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 </div>
 <div id="adminEventStatus" class="status"></div>
 
-<div id="adminVisitorPrivate" class="admin-only-private" style="display:none">
 <hr style="border:0;border-top:1px solid #edf0f3;margin:22px 0">
 <h3>💬 رسائل الزوار</h3>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
@@ -191,7 +189,6 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
 <div id="lastVisit" class="contact-note" style="margin-top:10px">آخر زيارة: —</div>
 <button class="secondary" type="button" onclick="loadVisitorStats()" style="margin-top:10px">تحديث الإحصائيات</button>
 <div id="visitorStatsStatus" class="status"></div>
-</div>
 </div>
 <div id="accessCodeAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>🔐 رمز دخول الزوار</h3>
@@ -249,6 +246,25 @@ footer{padding:25px 18px;text-align:center;color:#788590;font-size:13px}.empty{p
     </div>
   </div>
 </div>
+
+<!-- نافذة تعديل الفعالية أو المبادرة -->
+<div id="eventEditModal" class="modal" style="display:none"><div class="modal-box detail-box">
+<h2>تعديل الفعالية أو المبادرة</h2>
+<input id="editEventId" type="hidden">
+<label>رقم الفعالية</label><input id="editEventNumber" readonly>
+<label>السنة</label><select id="editEventYear"></select>
+<label>التاريخ</label><input id="editEventDate" type="date">
+<label>نوع الفعالية أو المبادرة</label><input id="editEventType" placeholder="نوع الفعالية">
+<label>اللجنة المنظمة</label><input id="editEventCommittee" placeholder="اللجنة المنظمة">
+<label>العنوان</label><input id="editEventTitle" placeholder="عنوان الفعالية أو المبادرة">
+<label>الوصف والتفاصيل</label><textarea id="editEventDescription" style="width:100%;min-height:120px;padding:12px;border:1px solid #d9e0e7;border-radius:10px"></textarea>
+<label>رقم الصفحة في الأرشيف السنوي (اختياري)</label><input id="editEventSourcePage" type="number" min="1" placeholder="رقم الصفحة">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+<button class="primary" type="button" onclick="saveEventEdits()">حفظ التعديلات</button>
+<button class="secondary" type="button" onclick="closeEventEdit()">إلغاء</button>
+</div>
+<div id="eventEditStatus" class="status"></div>
+</div></div>
 
 <!-- نافذة تعديل الوثيقة -->
 <div id="documentEditModal" class="modal" style="display:none"><div class="modal-box">
@@ -333,8 +349,7 @@ function renderAnnualYears(){
   const box=document.getElementById("annualYears"); if(!box)return;
   if(!archiveYears.length){box.innerHTML='<div class="empty">لا توجد سنوات مؤرشفة حتى الآن.</div>';return;}
   box.innerHTML=archiveYears.map((y,i)=>{
-    const candidates=docs.filter(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false&&d.file_url);
-    const doc=candidates.find(d=>/أرشيف المجلس الشوري/.test(String(d.title||''))) || candidates[0] || null;
+    const doc=docs.find(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
     const fileButton=doc?`<button type="button" onclick="openDocument('${doc.id}')">عرض الأرشيف</button>`:'';
     const pages=y.page_count!=null?`<br>إجمالي صفحات الملف: <b>${Number(y.page_count).toLocaleString('ar-MR')}</b>`:'';
     return `<div class="card"><div class="year">${escapeHtml(y.year)}</div><p>${escapeHtml(y.title)}${pages}</p><span class="badge">السنة ${Number(y.sequence_number||i+1).toLocaleString('ar-MR')}</span>${y.description?`<div class="doc-meta" style="margin-top:8px">${escapeHtml(y.description)}</div>`:''}${fileButton?`<div style="margin-top:12px">${fileButton}</div>`:''}</div>`;
@@ -516,8 +531,47 @@ const q=(document.getElementById("eventQ")?.value||"").trim().toLowerCase();
 const list=events.filter(e=>{const text=[e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" ").toLowerCase();return !q||text.includes(q);});
 document.getElementById("eventCount").textContent=list.length+" فعالية";
 if(!list.length){document.getElementById("events").innerHTML='<div class="empty">لا توجد فعاليات مطابقة.</div>';return;}
-document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${e.event_number}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${e.event_number}')">نسخ الرابط</button></div></div>`).join("");
+document.getElementById("events").innerHTML=list.map(e=>`<div class="event-card"><div class="event-title">${escapeHtml(e.title)}</div><div class="event-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?"<br>النوع: "+escapeHtml(e.event_type):""}${e.committee?"<br>اللجنة: "+escapeHtml(e.committee):""}</div><div class="event-actions"><button onclick="goToEvent('${String(e.event_number).replace(/'/g,"\\'")}')">فتح صفحة الفعالية</button><button class="secondary" onclick="copyEventLink('${String(e.event_number).replace(/'/g,"\\'")}')">نسخ الرابط</button>${currentUser&&currentUserRole==='admin'?`<button class="primary" type="button" onclick="editEvent('${e.id}')">✏️ تعديل</button>`:''}</div></div>`).join("");
 }
+async function editEvent(id){
+if(!currentUser||currentUserRole!=='admin'){alert("تعديل الفعاليات والمبادرات متاح للمدير فقط.");return;}
+const e=events.find(x=>String(x.id)===String(id));
+if(!e)return;
+document.getElementById("editEventId").value=e.id;
+document.getElementById("editEventNumber").value=e.event_number||"";
+const yearSelect=document.getElementById("editEventYear");
+const years=Array.isArray(archiveYears)?archiveYears:[];
+yearSelect.innerHTML=years.map(y=>`<option value="${escapeHtml(y.year)}">${escapeHtml(y.year)}</option>`).join("");
+if(e.year&&!years.some(y=>y.year===e.year))yearSelect.insertAdjacentHTML("beforeend",`<option value="${escapeHtml(e.year)}">${escapeHtml(e.year)}</option>`);
+yearSelect.value=e.year||"";
+document.getElementById("editEventDate").value=e.event_date||"";
+document.getElementById("editEventType").value=e.event_type||"";
+document.getElementById("editEventCommittee").value=e.committee||"";
+document.getElementById("editEventTitle").value=e.title||"";
+document.getElementById("editEventDescription").value=e.description||"";
+document.getElementById("editEventSourcePage").value=e.source_page||"";
+document.getElementById("eventEditStatus").textContent="";
+document.getElementById("eventEditModal").style.display="flex";
+}
+function closeEventEdit(){document.getElementById("eventEditModal").style.display="none";}
+async function saveEventEdits(){
+if(!currentUser||currentUserRole!=='admin'){alert("هذه العملية متاحة للمدير فقط.");return;}
+const status=document.getElementById("eventEditStatus");
+const id=document.getElementById("editEventId").value;
+const title=document.getElementById("editEventTitle").value.trim();
+if(!title){status.className="status error";status.textContent="يرجى إدخال عنوان الفعالية أو المبادرة.";return;}
+const sourcePageValue=document.getElementById("editEventSourcePage").value.trim();
+const sourcePage=sourcePageValue?Number(sourcePageValue):null;
+if(sourcePage!==null&&(!Number.isInteger(sourcePage)||sourcePage<1)){status.className="status error";status.textContent="رقم الصفحة يجب أن يكون عددًا صحيحًا أكبر من صفر.";return;}
+const changes={year:document.getElementById("editEventYear").value,event_date:document.getElementById("editEventDate").value||null,event_type:document.getElementById("editEventType").value.trim()||null,committee:document.getElementById("editEventCommittee").value.trim()||null,title,description:document.getElementById("editEventDescription").value.trim()||null,source_page:sourcePage};
+status.className="status";status.textContent="جارٍ حفظ التعديلات...";
+const {error}=await sb.from("archive_events").update(changes).eq("id",id);
+if(error){console.error(error);status.className="status error";status.textContent="تعذر حفظ التعديلات: "+error.message;return;}
+status.className="status success";status.textContent="تم تحديث الفعالية أو المبادرة بنجاح.";
+await loadEvents();
+setTimeout(closeEventEdit,700);
+}
+
 function openEvent(id){
 const e=events.find(x=>String(x.id)===String(id));
 if(!e)return;
@@ -740,10 +794,9 @@ document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"ال
 document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
 if(currentUserRole==='admin') loadAdminArchiveYears();
+renderEvents();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
-const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor){privateVisitor.style.display="none"; if(currentUserRole==='admin' && isAdminRoute()) privateVisitor.style.display="block";}
 render();
-enforcePrivateVisitorSections();
 }
 
 async function logout(){
@@ -751,7 +804,6 @@ await sb.auth.signOut();
 currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
-const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor)privateVisitor.style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 const passwordInput=document.getElementById("password");
 if(passwordInput) passwordInput.value="";
@@ -760,14 +812,8 @@ if(loginStatus){loginStatus.className="status";loginStatus.textContent="";}
 const loginModal=document.getElementById("loginModal");
 if(loginModal) loginModal.style.display="flex";
 render();
-enforcePrivateVisitorSections();
+renderEvents();
 alert("تم تسجيل الخروج بنجاح.");
-}
-
-function enforcePrivateVisitorSections(){
-  const el=document.getElementById("adminVisitorPrivate");
-  if(!el)return;
-  if(!(currentUserRole==="admin" && isAdminRoute())) el.style.display="none";
 }
 
 async function loadAdminFeedback(){
@@ -910,7 +956,6 @@ if(event==="SIGNED_OUT"){
 currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
-const privateVisitor=document.getElementById("adminVisitorPrivate");if(privateVisitor)privateVisitor.style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
 return;
 }
@@ -920,11 +965,9 @@ checkUser();
 }
 });
 
-(async()=>{
-  await loadArchiveYears();
-  await loadDocuments();
-  await checkUser();
-})();
+loadArchiveYears();
+loadDocuments();
+checkUser();
 </script>
 
 
