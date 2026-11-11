@@ -384,7 +384,7 @@ footer{
 <div id="accessStatus" style="margin-top:12px"></div></div></div>
 <header><div class="wrap">
 <div class="brand"><div class="logo">🏛️</div><div><h1>أرشيف المجلس الشوري</h1><div class="subtitle">منصة حفظ وتنظيم وتوثيق الذاكرة المؤسسية</div></div></div>
-<div class="search"><input id="q" placeholder="ابحث برقم الأرشيف أو عنوان الوثيقة أو السنة..."><button onclick="render()">بحث</button></div>
+<div class="search"><input id="q" type="search" aria-label="البحث في الوثائق والمبادرات والفعاليات" placeholder="ابحث عن وثيقة أو مبادرة أو فعالية: العنوان، الرقم، السنة..." oninput="render()" onkeydown="if(event.key==='Enter'){event.preventDefault();render();}"><button type="button" onclick="render()">بحث</button></div>
 </div></header>
 
 <main class="wrap">
@@ -660,7 +660,11 @@ function renderAnnualYears(){
   const box=document.getElementById("annualYears"); if(!box)return;
   if(!archiveYears.length){box.innerHTML='<div class="empty">لا توجد سنوات مؤرشفة حتى الآن.</div>';return;}
   box.innerHTML=archiveYears.map((y,i)=>{
-    const doc=docs.find(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    const yearDocs=docs.filter(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    // عند وجود أكثر من وثيقة مصنفة كأرشيف سنوي، نفضّل ملف أرشيف المجلس الشوري نفسه.
+    // لا نختار وثيقة أخرى بالخطأ (مثل النظام الداخلي للجنة الأرشفة).
+    const doc=yearDocs.find(d=>normalizeSearch(d.title).includes(normalizeSearch('أرشيف المجلس الشوري')))
+      || (yearDocs.length===1?yearDocs[0]:null);
     const fileButton=doc?`<button type="button" onclick="openDocument('${doc.id}')">عرض الأرشيف</button>`:'';
     const pages=y.page_count!=null?`<br>إجمالي صفحات الملف: <b>${Number(y.page_count).toLocaleString('ar-MR')}</b>`:'';
     return `<div class="card"><div class="year">${escapeHtml(y.year)}</div><p>${escapeHtml(y.title)}${pages}</p><span class="badge">السنة ${Number(y.sequence_number||i+1).toLocaleString('ar-MR')}</span>${y.description?`<div class="doc-meta" style="margin-top:8px">${escapeHtml(y.description)}</div>`:''}${fileButton?`<div style="margin-top:12px">${fileButton}</div>`:''}</div>`;
@@ -747,14 +751,16 @@ const text=normalizeSearch([d.archive_number,d.year,d.document_type,d.title,d.de
 return (!q||text.includes(q))&&(!y||d.year===y)&&(!t||d.document_type===t);
 });
 
-const eventList=(typeof events!=="undefined"?events:[]).filter(e=>{
-const text=normalizeSearch([e.event_number,e.year,e.title,e.event_type||"",e.committee||"",e.description||"",e.event_date||""].join(" "));
-// The main search shows events alongside documents. If a document-type filter is selected,
-// keep the result focused on documents; otherwise include matching events.
-return (!q||text.includes(q))&&(!y||e.year===y)&&(!t||!t);
-});
+// لا نعرض المبادرات والفعاليات في نتائج الشريط العلوي إلا عند إدخال عبارة بحث.
+const eventList=q?(typeof events!=="undefined"?events:[]).filter(e=>{
+const text=normalizeSearch([
+e.event_number,e.year,e.title,e.event_type||"",e.committee||"",
+e.description||"",e.event_date||""
+].join(" "));
+return text.includes(q)&&(!y||e.year===y)&&(!t);
+}):[];
 
-const countText=list.length+" وثيقة"+(eventList.length?" • "+eventList.length+" فعالية":"");
+const countText=list.length+" وثيقة"+(eventList.length?" • "+eventList.length+" مبادرة/فعالية":"");
 document.getElementById("count").textContent=countText;
 
 if(!list.length&&!eventList.length){
@@ -764,7 +770,7 @@ if(!list.length&&!eventList.length){
 
 let html="";
 if(eventList.length){
- html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج الفعاليات</div>';
+ html+='<div style="padding:14px 0 6px;font-weight:800;font-size:18px">نتائج المبادرات والفعاليات</div>';
  html+=eventList.map(e=>`<div class="doc" style="align-items:center"><div><div class="doc-title">${escapeHtml(e.title)}</div><div class="doc-meta"><b>${escapeHtml(e.event_number)}</b> • ${escapeHtml(e.year)}${e.event_date?" • "+escapeHtml(e.event_date):""}${e.event_type?" • "+escapeHtml(e.event_type):""}${e.committee?" • "+escapeHtml(e.committee):""}</div>${e.description?`<div class="doc-meta">${escapeHtml(e.description)}</div>`:""}</div><button onclick="goToEvent('${String(e.event_number).replace(/'/g,"\\'")}')">فتح صفحة الفعالية</button></div>`).join("");
 }
 if(list.length){
@@ -821,7 +827,7 @@ document.getElementById("archiveMixChart").innerHTML=years.length?years.map(y=>`
 async function loadEvents(){
 const {data,error}=await sb.from("archive_events").select("*").order("created_at",{ascending:false});
 if(error){console.error(error);document.getElementById("events").innerHTML='<div class="empty">تعذر تحميل بيانات الفعاليات.</div>';return;}
-events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();renderArchiveStats();prepareNextEventNumber();openEventFromUrl();
+events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();renderArchiveStats();prepareNextEventNumber();render();openEventFromUrl();
 }
 function showArchiveTab(tab){
 const docsTab=document.getElementById("docsTab"), eventsTab=document.getElementById("eventsTab");
