@@ -427,6 +427,16 @@ footer{
 <div class="admin-bar"><div><h2>لوحة إدارة الأرشيف</h2></div><button class="danger" onclick="logout()">تسجيل الخروج</button></div>
 <div id="adminUser" class="user-info"></div>
 <div id="roleBadge" class="user-info"></div>
+<div id="annualReportsAdmin" style="display:none;margin:18px 0;padding:16px;border:1px solid #dce7e3;border-radius:14px;background:#f8fbfa">
+<h3>📑 التقارير السنوية</h3>
+<p style="color:#667085">أنشئ تقريرًا مفصلًا لسنة محددة اعتمادًا على الوثائق والمبادرات والفعاليات والإنجازات المسجلة في الأرشيف. يمكنك طباعته أو حفظه بصيغة PDF.</p>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+<select id="annualReportYear" style="min-width:220px;flex:1"><option value="">اختر السنة</option></select>
+<button class="primary" type="button" onclick="generateAnnualReport()">إنشاء التقرير السنوي</button>
+</div>
+<div id="annualReportStatus" class="status"></div>
+</div>
+
 <div id="yearManagement" style="display:none;margin:18px 0;padding:16px;border:1px solid #e3e7eb;border-radius:14px;background:#fbfcfd">
 <h3>📚 إدارة السنوات</h3>
 <p style="color:#667085">يمكن للمدير إضافة سنة أرشيفية جديدة أو تعديل بيانات السنوات الحالية. يمكن ربط ملف السنة لاحقًا من إدارة الوثائق.</p>
@@ -660,7 +670,11 @@ function renderAnnualYears(){
   const box=document.getElementById("annualYears"); if(!box)return;
   if(!archiveYears.length){box.innerHTML='<div class="empty">لا توجد سنوات مؤرشفة حتى الآن.</div>';return;}
   box.innerHTML=archiveYears.map((y,i)=>{
-    const doc=docs.find(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    const yearDocs=docs.filter(d=>d.year===y.year&&d.document_type==='أرشيف سنوي'&&d.is_public!==false);
+    // عند وجود أكثر من وثيقة مصنفة كأرشيف سنوي، نفضّل ملف أرشيف المجلس الشوري نفسه.
+    // لا نختار وثيقة أخرى بالخطأ (مثل النظام الداخلي للجنة الأرشفة).
+    const doc=yearDocs.find(d=>normalizeSearch(d.title).includes(normalizeSearch('أرشيف المجلس الشوري')))
+      || (yearDocs.length===1?yearDocs[0]:null);
     const fileButton=doc?`<button type="button" onclick="openDocument('${doc.id}')">عرض الأرشيف</button>`:'';
     const pages=y.page_count!=null?`<br>إجمالي صفحات الملف: <b>${Number(y.page_count).toLocaleString('ar-MR')}</b>`:'';
     return `<div class="card"><div class="year">${escapeHtml(y.year)}</div><p>${escapeHtml(y.title)}${pages}</p><span class="badge">السنة ${Number(y.sequence_number||i+1).toLocaleString('ar-MR')}</span>${y.description?`<div class="doc-meta" style="margin-top:8px">${escapeHtml(y.description)}</div>`:''}${fileButton?`<div style="margin-top:12px">${fileButton}</div>`:''}</div>`;
@@ -714,6 +728,73 @@ async function editArchiveYear(id){
   document.getElementById("yearManagement")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+function populateAnnualReportYears(){
+  const select=document.getElementById("annualReportYear");
+  if(!select)return;
+  const current=select.value;
+  const values=[...new Set([
+    ...archiveYears.map(y=>y.year),
+    ...docs.map(d=>d.year),
+    ...events.map(e=>e.year)
+  ].filter(Boolean).map(String))].sort((a,b)=>b.localeCompare(a,"en",{numeric:true}));
+  select.innerHTML='<option value="">اختر السنة</option>'+values.map(y=>`<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join("");
+  if(values.includes(current))select.value=current;
+}
+
+function annualReportDate(value){
+  if(!value)return "غير محدد";
+  const d=new Date(value+ (String(value).length===10?"T00:00:00":""));
+  return Number.isNaN(d.getTime())?String(value):d.toLocaleDateString("ar-MR");
+}
+
+async function generateAnnualReport(){
+  if(!currentUser||currentUserRole!=="admin"){
+    alert("إنشاء التقارير السنوية متاح للمدير فقط.");return;
+  }
+  const year=document.getElementById("annualReportYear")?.value;
+  const status=document.getElementById("annualReportStatus");
+  if(!year){status.className="status error";status.textContent="يرجى اختيار السنة أولًا.";return;}
+  // افتح نافذة الطباعة مباشرة من تفاعل المستخدم لتجنب حظر النوافذ المنبثقة.
+  const reportWindow=window.open("","_blank");
+  if(!reportWindow){status.className="status error";status.textContent="تعذر فتح نافذة التقرير. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.";return;}
+  status.className="status";status.textContent="جارٍ إعداد التقرير السنوي...";
+  try{
+    const [{data:yearInfo,error:yearError},{data:yearDocs,error:docsError},{data:yearEvents,error:eventsError}]=await Promise.all([
+      sb.from("archive_years").select("year,title,description,page_count").eq("year",year).maybeSingle(),
+      sb.from("archive_documents").select("archive_number,year,document_type,document_date,title,description,file_url").eq("year",year).order("document_date",{ascending:true}),
+      sb.from("archive_events").select("event_number,year,event_date,title,event_type,committee,description,report_file_url,source_page").eq("year",year).order("event_date",{ascending:true})
+    ]);
+    if(yearError)throw yearError;
+    if(docsError)throw docsError;
+    if(eventsError)throw eventsError;
+    const documents=yearDocs||[], activities=yearEvents||[];
+    const title=yearInfo?.title||("التقرير السنوي " + year);
+    const categoryCounts={};
+    documents.forEach(d=>{const k=d.document_type||"غير مصنف";categoryCounts[k]=(categoryCounts[k]||0)+1;});
+    const categoryRows=Object.entries(categoryCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v}</td></tr>`).join("");
+    const documentRows=documents.length?documents.map((d,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(d.archive_number||"—")}</td><td>${escapeHtml(d.title||"بدون عنوان")}</td><td>${escapeHtml(d.document_type||"غير مصنف")}</td><td>${annualReportDate(d.document_date)}</td><td>${d.file_url?"متاح":"غير مرفق"}</td></tr>`).join(""):'<tr><td colspan="6">لا توجد وثائق مسجلة لهذه السنة.</td></tr>';
+    const eventRows=activities.length?activities.map((e,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(e.event_number||"—")}</td><td>${escapeHtml(e.title||"بدون عنوان")}</td><td>${annualReportDate(e.event_date)}</td><td>${escapeHtml(e.event_type||"غير محدد")}</td><td>${escapeHtml(e.committee||"غير محددة")}</td><td>${e.report_file_url?"متاح":"غير مرفق"}</td></tr>`).join(""):'<tr><td colspan="7">لا توجد مبادرات أو فعاليات مسجلة لهذه السنة.</td></tr>';
+    const achievementItems=activities.filter(e=>(e.description||"").trim()||e.title).map(e=>`<article><h4>${escapeHtml(e.title||"نشاط دون عنوان")}</h4><p>${escapeHtml((e.description||"").trim()||"لم يُضف وصف تفصيلي لهذا النشاط.")}</p><small>التاريخ: ${annualReportDate(e.event_date)}${e.committee?" • اللجنة: "+escapeHtml(e.committee):""}</small></article>`).join("")||'<p>لا توجد إنجازات أو أوصاف أنشطة مسجلة لهذه السنة.</p>';
+    const generatedAt=new Date().toLocaleString("ar-MR");
+    const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
+      *{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;color:#203442;margin:0;background:#fff;line-height:1.8}.page{max-width:1050px;margin:28px auto;padding:28px}.head{text-align:center;border-bottom:4px solid #b18b4b;padding-bottom:20px;margin-bottom:24px}.head h1{color:#18354a;margin:0;font-size:30px}.head h2{font-size:20px;margin:8px 0;color:#28665e}.muted{color:#64748b;font-size:13px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.metric{border:1px solid #dce7e3;border-radius:12px;padding:16px;text-align:center;background:#f8fbfa}.metric b{display:block;font-size:27px;color:#28665e}.metric span{font-size:13px;color:#64748b}h3{color:#18354a;border-bottom:1px solid #e3e9e7;padding-bottom:8px;margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 24px;font-size:13px}th,td{border:1px solid #dce3e8;padding:9px;text-align:right;vertical-align:top}th{background:#edf3f2;color:#18354a}article{padding:10px 14px;border-right:3px solid #b18b4b;background:#fafcfb;margin:10px 0;break-inside:avoid}article h4{margin:0 0 5px;color:#18354a}article p{margin:5px 0}article small{color:#64748b}.description{background:#fafcfb;border:1px solid #e4ece8;padding:14px;border-radius:10px}.actions{display:flex;justify-content:center;gap:10px;margin:20px 0}.actions button{border:0;border-radius:8px;padding:11px 18px;background:#18354a;color:white;font-weight:bold;cursor:pointer}.foot{border-top:1px solid #ddd;margin-top:35px;padding-top:12px;text-align:center;color:#64748b;font-size:12px}@media(max-width:650px){.page{padding:15px}.summary{grid-template-columns:1fr}.table-wrap{overflow-x:auto}}@media print{.page{max-width:none;margin:0;padding:10mm}.actions{display:none}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}h3,article{break-after:avoid}table{break-inside:auto}tr{break-inside:avoid}}
+      </style></head><body><main class="page"><header class="head"><h1>أرشيف المجلس الشوري</h1><h2>${escapeHtml(title)}</h2><div class="muted">تقرير سنوي توثيقي • السنة: ${escapeHtml(year)}</div></header>
+      ${yearInfo?.description?`<section class="description">${escapeHtml(yearInfo.description)}</section>`:""}
+      <section class="summary"><div class="metric"><b>${documents.length}</b><span>إجمالي الوثائق</span></div><div class="metric"><b>${activities.length}</b><span>المبادرات والفعاليات</span></div><div class="metric"><b>${yearInfo?.page_count??"—"}</b><span>صفحات الأرشيف المسجلة</span></div></section>
+      <h3>أولًا: ملخص الوثائق</h3><p>بلغ عدد الوثائق المسجلة في سنة ${escapeHtml(year)} عدد ${documents.length} وثيقة.</p><table><thead><tr><th>التصنيف</th><th>العدد</th></tr></thead><tbody>${categoryRows||'<tr><td colspan="2">لا توجد تصنيفات مسجلة.</td></tr>'}</tbody></table>
+      <h3>سجل الوثائق</h3><div class="table-wrap"><table><thead><tr><th>#</th><th>رقم الأرشيف</th><th>العنوان</th><th>التصنيف</th><th>التاريخ</th><th>الملف</th></tr></thead><tbody>${documentRows}</tbody></table></div>
+      <h3>ثانيًا: المبادرات والفعاليات</h3><p>بلغ عدد المبادرات والفعاليات المسجلة ${activities.length}.</p><div class="table-wrap"><table><thead><tr><th>#</th><th>الرقم</th><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>اللجنة</th><th>التقرير</th></tr></thead><tbody>${eventRows}</tbody></table></div>
+      <h3>ثالثًا: الأنشطة والإنجازات الموثقة</h3><p class="muted">يعرض هذا القسم الأنشطة المسجلة وأوصافها كما وردت في قاعدة بيانات الأرشيف، دون إضافة إنجازات غير موثقة.</p>${achievementItems}
+      <h3>رابعًا: ملاحظات التوثيق</h3><ul><li>عدد الوثائق التي لا يوجد لها ملف مرفق: ${documents.filter(d=>!d.file_url).length}.</li><li>عدد المبادرات والفعاليات التي لا يوجد لها تقرير مرفق: ${activities.filter(e=>!e.report_file_url).length}.</li><li>عدد المبادرات والفعاليات التي لم يُحدد لها رقم صفحة مصدر: ${activities.filter(e=>!e.source_page).length}.</li></ul>
+      <footer class="foot">تم إنشاء التقرير آليًا من سجلات أرشيف المجلس الشوري بتاريخ ${generatedAt}.<br>هذا التقرير يعكس البيانات المسجلة في المنصة وقت إنشائه.</footer><div class="actions"><button onclick="window.print()">طباعة / حفظ بصيغة PDF</button></div></main></body></html>`;
+    reportWindow.document.open();reportWindow.document.write(html);reportWindow.document.close();
+    status.className="status success";status.textContent="تم إنشاء التقرير. يمكنك طباعته أو اختيار «حفظ بصيغة PDF» من نافذة الطباعة.";
+  }catch(error){
+    console.error("Annual report error:",error);
+    reportWindow.close();status.className="status error";status.textContent="تعذر إنشاء التقرير. تحقق من الاتصال وحاول مرة أخرى.";
+  }
+}
+
 async function loadAdminArchiveYears(){
   if(currentUserRole!=='admin')return;
   const {data,error}=await sb.from("archive_years").select("*").order("sequence_number",{ascending:true}).order("year",{ascending:true});
@@ -731,6 +812,7 @@ document.getElementById("docs").innerHTML='<div class="empty">تعذر تحمي�
 return;
 }
 docs=data||[];
+populateAnnualReportYears();
 document.getElementById("docCount").textContent=docs.length;
 renderAnnualYears();
 render();
@@ -823,7 +905,7 @@ document.getElementById("archiveMixChart").innerHTML=years.length?years.map(y=>`
 async function loadEvents(){
 const {data,error}=await sb.from("archive_events").select("*").order("created_at",{ascending:false});
 if(error){console.error(error);document.getElementById("events").innerHTML='<div class="empty">تعذر تحميل بيانات الفعاليات.</div>';return;}
-events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));renderEvents();renderArchiveStats();prepareNextEventNumber();render();openEventFromUrl();
+events=data||[];events.sort((a,b)=>String(a.event_number||"").localeCompare(String(b.event_number||""),"en"));populateAnnualReportYears();renderEvents();renderArchiveStats();prepareNextEventNumber();render();openEventFromUrl();
 }
 function showArchiveTab(tab){
 const docsTab=document.getElementById("docsTab"), eventsTab=document.getElementById("eventsTab");
@@ -1113,7 +1195,8 @@ if(currentUser)document.getElementById("adminUser").textContent="مسجل الد
 document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"الصلاحية: مدير — جميع الصلاحيات":"الصلاحية: محرر — إضافة وتعديل فقط";
 document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
-if(currentUserRole==='admin') loadAdminArchiveYears();
+document.getElementById("annualReportsAdmin").style.display=currentUserRole==='admin'?"block":"none";
+if(currentUserRole==='admin'){loadAdminArchiveYears();populateAnnualReportYears();}
 renderEvents();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
 render();
