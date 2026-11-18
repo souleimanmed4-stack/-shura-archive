@@ -438,6 +438,19 @@ footer{
 <div id="annualReportStatus" class="status"></div>
 </div>
 
+<div id="auditLogsAdmin" style="display:none;margin:18px 0;padding:16px;border:1px solid #d8e2ee;border-radius:14px;background:#f7f9fc">
+<h3>🧾 سجل التعديلات والأنشطة الإدارية</h3>
+<p style="color:#667085">سجل توثيقي تلقائي لعمليات إضافة الوثائق والفعاليات والسنوات أو تعديلها أو حذفها. السجل للمدير فقط ولا يمكن تعديله من المنصة.</p>
+<div class="form" style="margin-bottom:12px">
+<select id="auditActionFilter"><option value="">كل العمليات</option><option value="INSERT">إضافة</option><option value="UPDATE">تعديل</option><option value="DELETE">حذف</option></select>
+<select id="auditTableFilter"><option value="">كل السجلات</option><option value="archive_documents">الوثائق</option><option value="archive_events">الفعاليات والمبادرات</option><option value="archive_years">السنوات</option></select>
+<input id="auditSearch" placeholder="بحث باسم المنفّذ أو عنوان السجل أو رقمه">
+<button class="secondary" type="button" onclick="loadAuditLogs()">تحديث السجل</button>
+</div>
+<div id="auditLogsStatus" class="status"></div>
+<div id="auditLogsList"><div class="empty">اضغط تحديث السجل لعرض أحدث العمليات.</div></div>
+</div>
+
 <div id="yearManagement" style="display:none;margin:18px 0;padding:16px;border:1px solid #e3e7eb;border-radius:14px;background:#fbfcfd">
 <h3>📚 إدارة السنوات</h3>
 <p style="color:#667085">يمكن للمدير إضافة سنة أرشيفية جديدة أو تعديل بيانات السنوات الحالية. يمكن ربط ملف السنة لاحقًا من إدارة الوثائق.</p>
@@ -1189,6 +1202,30 @@ if(currentUserRole==='admin'){loadAdminFeedback();loadArchiveEditors();}
 }
 }
 
+function auditActionLabel(action){return action==='INSERT'?'إضافة':action==='UPDATE'?'تعديل':action==='DELETE'?'حذف':action||'—';}
+function auditTableLabel(table){return table==='archive_documents'?'وثيقة':table==='archive_events'?'فعالية / مبادرة':table==='archive_years'?'سنة أرشيفية':table||'—';}
+function auditFormatDate(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?value:d.toLocaleString('ar-MR',{dateStyle:'medium',timeStyle:'short'});}
+function auditJsonBlock(value){if(!value)return '<span class="doc-meta">لا توجد بيانات</span>';return `<pre dir="ltr" style="white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;background:#f1f4f8;padding:10px;border-radius:8px;font-size:12px;max-height:260px;overflow:auto">${escapeHtml(JSON.stringify(value,null,2))}</pre>`;}
+async function loadAuditLogs(){
+ if(currentUserRole!=='admin'){return;}
+ const status=document.getElementById('auditLogsStatus');
+ const list=document.getElementById('auditLogsList');
+ if(!status||!list)return;
+ status.className='status';status.textContent='جارٍ تحميل سجل العمليات...';
+ let query=sb.from('archive_audit_logs').select('id,actor_id,actor_name,actor_role,action,entity_table,entity_id,entity_label,old_data,new_data,created_at').order('created_at',{ascending:false}).limit(200);
+ const action=document.getElementById('auditActionFilter')?.value||'';
+ const table=document.getElementById('auditTableFilter')?.value||'';
+ if(action)query=query.eq('action',action);
+ if(table)query=query.eq('entity_table',table);
+ const {data,error}=await query;
+ if(error){console.error('Audit log load error:',error);status.className='status error';status.textContent='تعذر تحميل السجل. تحقق من صلاحية المدير واتصال قاعدة البيانات.';list.innerHTML='';return;}
+ const term=(document.getElementById('auditSearch')?.value||'').trim().toLowerCase();
+ const rows=(data||[]).filter(x=>!term||[x.actor_name,x.actor_role,x.entity_label,x.entity_id,x.entity_table,x.action].join(' ').toLowerCase().includes(term));
+ status.className='status success';status.textContent=`تم تحميل ${rows.length} عملية${(data||[]).length===200?' — يعرض أحدث 200 عملية':''}.`;
+ if(!rows.length){list.innerHTML='<div class="empty">لا توجد عمليات مطابقة حتى الآن. ستظهر العمليات الجديدة تلقائيًا بعد تنفيذها.</div>';return;}
+ list.innerHTML=rows.map(x=>`<details style="background:#fff;border:1px solid #e5eaf0;border-radius:10px;padding:12px;margin:9px 0"><summary style="cursor:pointer;line-height:1.9"><b>${escapeHtml(auditActionLabel(x.action))}</b> ${escapeHtml(auditTableLabel(x.entity_table))}: ${escapeHtml(x.entity_label||'بدون عنوان')} <span class="doc-meta">— ${escapeHtml(auditFormatDate(x.created_at))}</span><br><span class="doc-meta">المنفّذ: ${escapeHtml(x.actor_name||'غير محدد')} • ${escapeHtml(x.actor_role||'دور غير متاح')} • رقم السجل: ${escapeHtml(x.entity_id||'—')}</span></summary><div style="margin-top:12px"><b>البيانات السابقة</b>${auditJsonBlock(x.old_data)}<b>البيانات بعد العملية</b>${auditJsonBlock(x.new_data)}</div></details>`).join('');
+}
+
 function showAdmin(){
 document.getElementById("adminPanel").style.display="block";
 document.getElementById("loginButton").textContent="لجنة الأرشفة — لوحة الإدارة";
@@ -1197,7 +1234,8 @@ document.getElementById("roleBadge").textContent=currentUserRole==='admin'?"ال
 document.getElementById("editorManagement").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("annualReportsAdmin").style.display=currentUserRole==='admin'?"block":"none";
-if(currentUserRole==='admin'){loadAdminArchiveYears();populateAnnualReportYears();}
+document.getElementById("auditLogsAdmin").style.display=currentUserRole==='admin'?"block":"none";
+if(currentUserRole==='admin'){loadAdminArchiveYears();populateAnnualReportYears();loadAuditLogs();}
 renderEvents();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
 render();
