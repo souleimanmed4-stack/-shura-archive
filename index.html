@@ -505,14 +505,16 @@ footer{
 <div id="adminEventStatus" class="status"></div>
 
 <hr style="border:0;border-top:1px solid #edf0f3;margin:22px 0">
+<div id="visitorMessagesAdmin" style="display:none">
 <h3>💬 رسائل الزوار</h3>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
 <span id="feedbackCount" class="badge">0 رسالة جديدة</span>
 <button class="secondary" type="button" onclick="loadAdminFeedback()">تحديث الرسائل</button>
 </div>
 <div id="adminFeedbackList"><div class="empty">جاري تحميل الرسائل...</div></div>
+</div>
 
-<div id="visitorStatsAdmin" class="form" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
+<div id="visitorStatsAdmin" class="form" style="display:none;margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
 <h3>📊 إحصائيات زوار الأرشيف</h3>
 <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
 <div class="contact-card"><b>إجمالي الزيارات</b><div id="totalVisits" style="font-size:25px;font-weight:800;margin-top:6px">—</div></div>
@@ -620,7 +622,7 @@ footer{
 <!-- نافذة الدخول -->
 <div id="loginModal" class="modal"><div class="modal-box">
 <h2>دخول لجنة الأرشفة</h2>
-<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="off">
 <input id="password" type="password" placeholder="كلمة المرور">
 <div style="text-align:center;margin:10px 0">
 <button type="button" onclick="openForgotPassword()" style="background:none;border:0;color:#2563eb;text-decoration:underline;cursor:pointer;font-size:15px">نسيت كلمة المرور؟</button>
@@ -1235,6 +1237,8 @@ document.getElementById("editorManagement").style.display=currentUserRole==='adm
 document.getElementById("yearManagement").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("annualReportsAdmin").style.display=currentUserRole==='admin'?"block":"none";
 document.getElementById("auditLogsAdmin").style.display=currentUserRole==='admin'?"block":"none";
+const visitorMessages=document.getElementById("visitorMessagesAdmin");if(visitorMessages)visitorMessages.style.display=currentUserRole==='admin'?"block":"none";
+const visitorStats=document.getElementById("visitorStatsAdmin");if(visitorStats)visitorStats.style.display=currentUserRole==='admin'?"block":"none";
 if(currentUserRole==='admin'){loadAdminArchiveYears();populateAnnualReportYears();loadAuditLogs();}
 renderEvents();
 const access=document.getElementById("accessCodeAdmin");if(access)access.style.display=currentUserRole==='admin'?"block":"none";
@@ -1247,12 +1251,14 @@ currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
+const emailInput=document.getElementById("email");
+if(emailInput){emailInput.value="";emailInput.removeAttribute("value");}
 const passwordInput=document.getElementById("password");
 if(passwordInput) passwordInput.value="";
 const loginStatus=document.getElementById("loginStatus");
 if(loginStatus){loginStatus.className="status";loginStatus.textContent="";}
 const loginModal=document.getElementById("loginModal");
-if(loginModal) loginModal.style.display="flex";
+if(loginModal) loginModal.style.display="none";
 render();
 renderEvents();
 alert("تم تسجيل الخروج بنجاح.");
@@ -1399,6 +1405,9 @@ currentUser=null;
 currentUserRole=null;
 document.getElementById("adminPanel").style.display="none";
 document.getElementById("loginButton").textContent="دخول لجنة الأرشفة";
+const emailInput=document.getElementById("email");if(emailInput)emailInput.value="";
+const passwordInput=document.getElementById("password");if(passwordInput)passwordInput.value="";
+const loginModal=document.getElementById("loginModal");if(loginModal)loginModal.style.display="none";
 return;
 }
 
